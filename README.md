@@ -1,11 +1,13 @@
 # IndieLabel
 
 ## Installation / Setup
-- Activate your virtual environment (tested with Python 3.8)
+- Activate your virtual environment (tested with Python 3.8).
 - Install requirements:
     ```
     $ pip install -r requirements.txt
     ```
+- Download and unzip the `data` sub-directory from [this Drive folder](https://drive.google.com/file/d/1In9qAzV5t--rMmEH2R5miWpZ4IQStgFu/view?usp=sharing) and place it in the repo directory (334.2MB zipped, 549.1MB unzipped).
+
 
 - Start the Flask server:
     ```
