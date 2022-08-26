@@ -1,4 +1,13 @@
 # IndieLabel
+**End-User Audits: A System Empowering Communities to Lead Large-Scale Investigations of Harmful Algorithmic Behavior**
+
+Michelle S. Lam, Mitchell L. Gordon, Danaë Metaxa, Jeffrey T. Hancock, James A. Landay, Michael S. Bernstein (CSCW 2022)
+
+This repo shares our implementation of **IndieLabel**—an interactive web application for end-user auditing that we introduced in our CSCW paper.
+
+> Because algorithm audits are conducted by technical experts, audits are necessarily limited to the hypotheses that experts think to test. End users hold the promise to expand this purview, as they inhabit spaces and witness algorithmic impacts that auditors do not. In pursuit of this goal, we propose end-user audits—system-scale audits led by non-technical users—and present an approach that scaffolds end users in hypothesis generation, evidence identification, and results communication. Today, performing a system-scale audit requires substantial user effort to label thousands of system outputs, so we introduce a collaborative filtering technique that leverages the algorithmic system's own disaggregated training data to project from a small number of end user labels onto the full test set. Our end-user auditing tool, IndieLabel, employs these projected labels so that users can rapidly explore where their opinions diverge from the algorithmic system's outputs. By highlighting topic areas where the system is under-performing for the user and surfacing sets of likely error cases, the tool guides the user in authoring an audit report. In an evaluation of end-user audits on a popular comment toxicity model with 17 non-technical participants, participants both replicated issues that formal audits had previously identified and also raised previously underreported issues such as under-flagging on veiled forms of hate that perpetuate stigma and over-flagging of slurs that have been reclaimed by marginalized communities.
+
+---
 
 ## Installation / Setup
 - Activate your virtual environment (tested with Python 3.8).
@@ -45,6 +54,6 @@ Here's a summary of the relevant pages used for each participant in our study. F
 - Label all of the examples in the table
     - When you're done, click the "Get Number of Comments Labeled" button to verify the number of comments that have been labeled. If there are at least 40 comments labeled, the "Train Model" button will be enabled.
     - Click on the "Train Model" button and wait for the model to train (~30-60 seconds).
-    
+
 - Then, go to the **Auditing** page and use your new model.
     - To view the different auditing modes that we provided for our evaluation task, please refer to the URL paths listed in the "Auditing task pages" section above.
