@@ -12,7 +12,9 @@ RUN apt-get update \
 	&& pip3 install -r requirements.txt
 
 RUN npm install --global rollup \
-	&& npm install --save-dev svelte rollup-plugin-svelte --legacy-peer-deps
+	&& npm install --save-dev svelte rollup-plugin-svelte --legacy-peer-deps \
+	&& cd indie_label_svelte \
+	&& npm run build
 
 ENV HOST=0.0.0.0
 EXPOSE 5001
