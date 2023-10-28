@@ -34,9 +34,12 @@ USER user
 ENV HOST=0.0.0.0
 EXPOSE 5001
 
+# Download data from Google Drive
 RUN gdown 1In9qAzV5t--rMmEH2R5miWpZ4IQStgFu \
 	&& unzip data.zip \
-	&& rm data.zip
+	&& rm data.zip \
+	# Download Sentence Transformers model
+	&& python3 cache_model.py 
 
 ENTRYPOINT bash run_app.sh
 
