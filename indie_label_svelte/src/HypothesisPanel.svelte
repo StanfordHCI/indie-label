@@ -230,7 +230,7 @@
         <div class="panel_header_content">
             <div class="page_header">
                 <!-- <span class="page_title">IndieLabel</span> -->
-                <img src="/logo.png" style="height: 60px; padding: 0px 20px;" alt="IndieLabel" />
+                <img src="/logo.png" style="height: 50px; padding: 0px 20px;" alt="IndieLabel" />
                 <Button on:click={() => (user_dialog_open = true)} class="user_button" color="secondary" style="margin: 12px 10px;" >
                     <Label>User: {cur_user}</Label>
                 </Button>

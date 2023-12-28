@@ -425,7 +425,7 @@
                             clusters={clusters} 
                             model={personalized_model} 
                             data={cluster_results} 
-                            table_width_pct={90}
+                            table_width_pct={100}
                             table_id={"main"}
                             use_model={use_model}
                             bind:evidence={evidence} 

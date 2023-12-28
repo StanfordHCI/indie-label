@@ -35,6 +35,7 @@
     export let evidence;
     export let table_id;
     export let use_model = true;
+    export let show_agree_disagree = false;
 
     let N_COMMENTS = 500;
     let show_num_ratings = false;
@@ -323,8 +324,10 @@
                     <Cell>Potential toxicity<br>categories</Cell>
                     {/if}
                     {/if}
-
+                    
+                    {#if show_agree_disagree}
                     <Cell>Do you agree<br>with the system?</Cell>
+                    {/if}
 
                     {#if !show_checkboxes}
                     <Cell>Remove</Cell>
@@ -396,7 +399,8 @@
                         </Cell>
                         {/if}
                         {/if}
-
+                        
+                        {#if show_agree_disagree}
                         <Cell>
                             <div>
                                 <FormField>
@@ -417,6 +421,7 @@
                                 </FormField>
                             </div>
                         </Cell>
+                        {/if}
 
                         {#if !show_checkboxes}
                         <Cell>

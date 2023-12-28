@@ -2,6 +2,7 @@ html, body {
 	position: relative;
 	width: 100%;
 	height: 100%;
+	font-size: 12px;
 }
 
 * {
@@ -88,13 +89,13 @@ h3 {
 }
 h5 {
 	color: rgb(80, 80, 80);
-	font-size: 25px;
+	font-size: 20px;
 }
 h6 {
 	margin-top: 50px;
 	margin-bottom: 20px;
 	text-transform: uppercase;
-	font-size: 18px;
+	font-size: 16px;
 }
 
 .head_3 {
@@ -107,7 +108,7 @@ h6 {
 
 .head_5 {
 	color: rgb(80, 80, 80);
-	font-size: 24px;
+	font-size: 20px;
 	font-weight: bold;
 	margin-top: 25px;
 	margin-bottom: 25px;
@@ -117,7 +118,7 @@ h6 {
 	color: rgb(80, 80, 80);
 	text-transform: uppercase;
 	font-weight: bold;
-	font-size: 18px;
+	font-size: 16px;
 	margin-top: 25px;
 	margin-bottom: 25px;
 }
@@ -125,7 +126,7 @@ h6 {
 .head_6_non_cap {
 	color: rgb(80, 80, 80);
 	font-weight: bold;
-	font-size: 18px;
+	font-size: 16px;
 	margin-top: 25px;
 	margin-bottom: 25px;
 }
@@ -234,12 +235,21 @@ table {
 	overflow-y: scroll;
 }
 
+.page_header {
+	height: 64px !important;
+}
+
 .tab_header {
 	position: fixed;
 	background-color: #e3d6fd;
 	z-index: 1001;
 	width: 70%;
 	/* border-bottom: 1px solid grey; */
+}
+
+.tab_header span {
+	font-size: 14px;
+	line-height: normal !important;
 }
 
 .label_table {
@@ -279,6 +289,7 @@ table {
 
 .audit_section {
 	padding-top: 40px;
+	width: 100%;
 }
 
 .comment_table_small {
