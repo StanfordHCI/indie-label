@@ -220,8 +220,14 @@ def get_cluster_results():
     if (scaffold_method == "personal_cluster") and (os.path.isfile(personal_cluster_file)):
         cluster_overview_plot_json, sampled_df = utils.plot_overall_vis_cluster(topic_df, error_type=error_type, n_comments=500)
     else:
-        # Regular
-        cluster_overview_plot_json, sampled_df = utils.get_cluster_overview_plot(topic_df, error_type=error_type, use_model=use_model)
+        # Default case
+        topic_df_mod = topic_df.merge(comments_grouped_full_topic_cat, on="item_id", how="left", suffixes=('_', '_avg'))
+        if use_model:
+            # Display results with the model as a reference point
+            cluster_overview_plot_json, sampled_df = utils.plot_overall_vis_cluster(topic_df_mod, error_type=error_type, n_comments=500)
+        else:
+            # Display results without a model
+            cluster_overview_plot_json, sampled_df = utils.plot_overall_vis_cluster_no_model(topic_df_mod, n_comments=500)
 
     cluster_comments = utils.get_cluster_comments(sampled_df,error_type=error_type, num_examples=n_examples, use_model=use_model)  # New version of cluster comment table
 

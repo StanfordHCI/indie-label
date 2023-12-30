@@ -431,6 +431,7 @@ def plot_class_cond_results(preds_df, breakdown_axis, perf_metric, other_ids, so
 
     return combined
 
+# Generates the summary plot across all topics for the user
 def show_overall_perf(variant, error_type, cur_user, threshold=TOXIC_THRESHOLD, breakdown_axis=None, topic_vis_method="median"):
     # Your perf (calculate using model and testset)
     breakdown_axis = readable_to_internal[breakdown_axis]
@@ -447,7 +448,7 @@ def show_overall_perf(variant, error_type, cur_user, threshold=TOXIC_THRESHOLD, 
                 topic_overview_plot_json = json.load(f)
         else:
             preds_df_mod = preds_df.merge(comments_grouped_full_topic_cat, on="item_id", how="left", suffixes=('_', '_avg'))
-            if topic_vis_method == "median":
+            if topic_vis_method == "median":  # Default
                 preds_df_mod_grp = preds_df_mod.groupby(["topic_", "user_id"]).median()
             elif topic_vis_method == "mean":
                 preds_df_mod_grp = preds_df_mod.groupby(["topic_", "user_id"]).mean()
@@ -737,7 +738,7 @@ def train_updated_model(model_name, last_label_i, ratings, user, top_n=20, topic
 
     mae, mse, rmse, avg_diff = user_perf_metrics[model_name]
 
-    cur_preds_df = get_preds_df(cur_model, ["A"], sys_eval_df=ratings_df_full, topic=topic, model_name=model_name)  # Just get results for user
+    cur_preds_df = get_preds_df(cur_model, ["A"], sys_eval_df=ratings_df_full)  # Just get results for user
 
     # Save this batch of labels
     with open(os.path.join(module_dir, label_dir, f"{last_label_i + 1}.pkl"), "wb") as f:
@@ -827,7 +828,12 @@ def get_predictions_by_user_and_item(predictions):
         user_item_preds[(uid, iid)] = est
     return user_item_preds
 
-def get_preds_df(model, user_ids, orig_df=ratings_df_full, avg_ratings_df=comments_grouped_full_topic_cat, sys_eval_df=sys_eval_df, bins=BINS, topic=None, model_name=None):
+# Pre-computes predictions for the provided model and specified users on the system-eval dataset
+# - model: trained model
+# - user_ids: list of user IDs to compute predictions for
+# - avg_ratings_df: dataframe of average ratings for each comment (pre-computed)
+# - sys_eval_df: dataframe of system eval labels (pre-computed)
+def get_preds_df(model, user_ids, avg_ratings_df=comments_grouped_full_topic_cat, sys_eval_df=sys_eval_df, bins=BINS):
     # Prep dataframe for all predictions we'd like to request
     start = time.time()
     sys_eval_comment_ids = sys_eval_df.item_id.unique().tolist()
@@ -861,9 +867,14 @@ def get_preds_df(model, user_ids, orig_df=ratings_df_full, avg_ratings_df=commen
 
     return df
 
+# Given the full set of ratings, trains the specified model type and evaluates on the model eval set
+# - ratings_df: dataframe of all ratings
+# - train_df: dataframe of training labels
+# - model_eval_df: dataframe of model eval labels (validation set)
+# - train_frac: fraction of ratings to use for training
 def train_user_model(ratings_df, train_df=train_df, model_eval_df=model_eval_df, train_frac=0.75, model_type="SVD", sim_type=None, user_based=True):
     # Sample from shuffled labeled dataframe and add batch to train set; specified set size to model_eval set
-    labeled = ratings_df.sample(frac=1)
+    labeled = ratings_df.sample(frac=1)  # Shuffle the data
     batch_size = math.floor(len(labeled) * train_frac)
     labeled_train = labeled[:batch_size]
     labeled_model_eval = labeled[batch_size:]
@@ -876,6 +887,10 @@ def train_user_model(ratings_df, train_df=train_df, model_eval_df=model_eval_df,
     
     return model, perf, labeled_train, labeled_model_eval
 
+# Given a set of labels split into training and validation (model_eval), trains the specified model type on the training labels and evaluates on the model_eval labels
+# - train_df: dataframe of training labels
+# - model_eval_df: dataframe of model eval labels (validation set)
+# - model_type: type of model to train
 def train_model(train_df, model_eval_df, model_type="SVD", sim_type=None, user_based=True):
     # Train model
     reader = Reader(rating_scale=(0, 4))
@@ -1126,6 +1141,7 @@ def get_comment_url(row):
 def get_topic_url(row):
     return f"#{row['topic_']}/#topic"
 
+# Plots overall results histogram (each block is a topic)
 def plot_overall_vis(preds_df, error_type, cur_user, cur_model, n_topics=None, bins=VIS_BINS, threshold=TOXIC_THRESHOLD, bin_step=0.05):
     df = preds_df.copy().reset_index()
     
@@ -1242,22 +1258,15 @@ def plot_overall_vis(preds_df, error_type, cur_user, cur_model, n_topics=None, b
 
     return plot
 
-def get_cluster_overview_plot(preds_df, error_type, threshold=TOXIC_THRESHOLD, use_model=True):
-    preds_df_mod = preds_df.merge(comments_grouped_full_topic_cat, on="item_id", how="left", suffixes=('_', '_avg'))
-
-    if use_model:
-        return plot_overall_vis_cluster(preds_df_mod, error_type=error_type, n_comments=500, threshold=threshold)
-    else:
-        return plot_overall_vis_cluster2(preds_df_mod, error_type=error_type, n_comments=500, threshold=threshold)
-
-def plot_overall_vis_cluster2(preds_df, error_type, n_comments=None, bins=VIS_BINS, threshold=TOXIC_THRESHOLD, bin_step=0.05):
+# Plots cluster results histogram (each block is a comment), but *without* a model 
+# as a point of reference (in contrast to plot_overall_vis_cluster)
+def plot_overall_vis_cluster_no_model(preds_df, n_comments=None, bins=VIS_BINS, threshold=TOXIC_THRESHOLD, bin_step=0.05):
     df = preds_df.copy().reset_index()
     
     df["vis_pred_bin"], out_bins = pd.cut(df["rating"], bins, labels=VIS_BINS_LABELS, retbins=True)
     df = df[df["user_id"] == "A"].sort_values(by=["rating"]).reset_index()
     df["system_label"] = [("toxic" if r > threshold else "non-toxic") for r in df["rating"].tolist()]
     df["key"] = [get_key_no_model(sys, threshold) for sys in df["rating"].tolist()]
-    print("len(df)", len(df))  # always 0 for some reason (from keyword search)
     df["category"] = df.apply(lambda row: get_category(row), axis=1)
     df["url"] = df.apply(lambda row: get_comment_url(row), axis=1)
     
@@ -1345,17 +1354,15 @@ def plot_overall_vis_cluster2(preds_df, error_type, n_comments=None, bins=VIS_BI
     final_plot = (bkgd + annotation + chart + rule).properties(height=(plot_dim_height), width=plot_dim_width).resolve_scale(color='independent').to_json()
 
     return final_plot, df
-            
+
+# Plots cluster results histogram (each block is a comment) *with* a model as a point of reference
 def plot_overall_vis_cluster(preds_df, error_type, n_comments=None, bins=VIS_BINS, threshold=TOXIC_THRESHOLD, bin_step=0.05):
     df = preds_df.copy().reset_index(drop=True)
-    # df = df[df["topic_"] == topic]
     
     df["vis_pred_bin"], out_bins = pd.cut(df["pred"], bins, labels=VIS_BINS_LABELS, retbins=True)
     df = df[df["user_id"] == "A"].sort_values(by=["rating"]).reset_index(drop=True)
     df["system_label"] = [("toxic" if r > threshold else "non-toxic") for r in df["rating"].tolist()]
     df["key"] = [get_key(sys, user, threshold) for sys, user in zip(df["rating"].tolist(), df["pred"].tolist())]
-    print("len(df)", len(df))  # always 0 for some reason (from keyword search)
-    # print("columns", df.columns)
     df["category"] = df.apply(lambda row: get_category(row), axis=1)
     df["url"] = df.apply(lambda row: get_comment_url(row), axis=1)
     
