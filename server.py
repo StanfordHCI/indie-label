@@ -17,10 +17,12 @@ import math
 import altair as alt
 import matplotlib.pyplot as plt
 import time
+import friendlywords as fw
 
 import audit_utils as utils
 
 app = Flask(__name__)
+DEBUG = False  # Debug flag for development; set to False for production
 
 # Path for our main Svelte page
 @app.route("/")
@@ -38,10 +40,18 @@ def home(path):
 comments_grouped_full_topic_cat = pd.read_pickle("data/comments_grouped_full_topic_cat2_persp.pkl")
 
 @app.route("/audit_settings")
-def audit_settings():
+def audit_settings(debug=DEBUG):
     # Fetch page content
     user = request.args.get("user")
     scaffold_method = request.args.get("scaffold_method")
+
+    # Assign user ID if none is provided (default case)
+    if user == "null":
+        if debug:
+            user = "DemoUser"
+        else:
+            # Generate random two-word user ID
+            user = fw.generate(2, separator="_")
 
     user_models = utils.get_all_model_names(user)
     grp_models = [m for m in user_models if m.startswith(f"model_{user}_group_")]
@@ -89,21 +99,10 @@ def audit_settings():
         "breakdown_categories": ['Topic', 'Toxicity Category', 'Toxicity Severity'],
         "clusters": clusters_options,
         "clusters_for_tuning": clusters_for_tuning_options,
+        "user": user,
     }
     return json.dumps(context)
 
-########################################
-# ROUTE: /GET_USERS
-@app.route("/get_users")
-def get_users():
-    # Fetch page content
-    with open(f"./data/users_to_models.pkl", "rb") as f:
-        users_to_models = pickle.load(f)
-        users = list(users_to_models.keys())
-        context = {
-            "users": users,
-        }
-        return json.dumps(context)
 
 ########################################
 # ROUTE: /GET_AUDIT
@@ -320,8 +319,7 @@ def get_labeling():
     clusters_for_tuning = utils.get_large_clusters(min_n=150)
     clusters_for_tuning_options = [{"value": i, "text": cluster} for i, cluster in enumerate(clusters_for_tuning)]  # Format for Svelecte UI element
 
-    # model_name_suggestion = f"model_{int(time.time())}"
-    model_name_suggestion = f"model_{user}"
+    model_name_suggestion = f"my_model"
 
     context = {
         "personalized_models": utils.get_all_model_names(user),
@@ -761,41 +759,6 @@ def get_explore_examples():
 
     results = {
         "examples": ex_json,
-    }
-    return json.dumps(results)
-
-########################################
-# ROUTE: /GET_RESULTS
-@app.route("/get_results")
-def get_results():
-    users = request.args.get("users")
-    if users != "":
-        users = users.split(",")
-    # print("users", users)
-
-    IGNORE_LIST = ["DemoUser"]
-    report_dir = f"./data/user_reports"
-    
-
-    # For each user, get personal and prompt results
-    # Get links to label pages and audit pages
-    results = []
-    for user in users:
-        if user not in IGNORE_LIST:
-            user_results = {}
-            user_results["user"] = user
-            for scaffold_method in ["personal", "personal_group", "prompts"]:
-                # Get results
-                user_file = os.path.join(report_dir, f"{user}_{scaffold_method}.pkl")
-                if os.path.isfile(user_file):
-                    with open(user_file, "rb") as f:
-                        user_results[scaffold_method] = pickle.load(f)
-            results.append(user_results)
-
-    # print("results", results)
-
-    results = {
-        "results": results,
     }
     return json.dumps(results)
 

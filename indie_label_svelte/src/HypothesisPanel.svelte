@@ -1,12 +1,9 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import ClusterResults from "./ClusterResults.svelte";
-    import HelpTooltip from "./HelpTooltip.svelte";
 
     import Button, { Label } from "@smui/button";
     import Textfield from '@smui/textfield';
-    import { user } from './stores/cur_user_store.js';
-    import { error_type } from './stores/error_type_store.js';
     import { new_evidence } from './stores/new_evidence_store.js';
     import { open_evidence } from './stores/open_evidence_store.js';
     import { topic_chosen } from './stores/cur_topic_store.js';
@@ -24,21 +21,12 @@
     import Checkbox from '@smui/checkbox';
     import FormField from '@smui/form-field';
     import IconButton from "@smui/icon-button";
-    import{ Wrapper } from '@smui/tooltip';
     import Radio from '@smui/radio';
-    import Switch from '@smui/switch';
 
     export let model;
-    // export let topic;
-    export let user_dialog_open;
+    export let cur_user;
 
     let all_reports = [];
-
-    let cur_user;
-    user.subscribe(value => {
-		cur_user = value;
-	});
-
     let cur_topic;
     topic_chosen.subscribe(value => {
 		cur_topic = value;
@@ -69,8 +57,6 @@
         cur_open_evidence = selected["evidence"];
         open_evidence.update((value) => cur_open_evidence);
         let isolated_topic = selected["title"].replace(/^(Topic: )/,'');
-        console.log("selected title", selected["title"]);
-        console.log(selected);
 
         // Close panel
         open = false;
@@ -229,9 +215,8 @@
     <div class="panel_header">
         <div class="panel_header_content">
             <div class="page_header">
-                <!-- <span class="page_title">IndieLabel</span> -->
                 <img src="/logo.png" style="height: 50px; padding: 0px 20px;" alt="IndieLabel" />
-                <Button on:click={() => (user_dialog_open = true)} class="user_button" color="secondary" style="margin: 12px 10px;" >
+                <Button class="user_button" color="secondary" style="margin: 12px 10px;" >
                     <Label>User: {cur_user}</Label>
                 </Button>
             </div>
@@ -578,6 +563,13 @@
     :global(.mdc-button.user_button) {
         float: right;
         margin-right: 20px;
+        max-width: 200px;
+    }
+
+    :global(.mdc-button.user_button span) {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
     }
 
     .page_header {

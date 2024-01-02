@@ -4,20 +4,14 @@
     import Button, { Label } from "@smui/button";
     import DataTable, { Head, Body, Row, Cell } from "@smui/data-table";
     import LinearProgress from '@smui/linear-progress';
-    import { user } from './stores/cur_user_store.js';
     import { model_chosen } from './stores/cur_model_store.js';
 
     export let topic;
     export let model_name = null;
+    export let cur_user;
 
     let to_label = {};
     let promise = Promise.resolve(null);
-
-    // Get current user
-    let cur_user;
-    user.subscribe(value => {
-		cur_user = value;
-	});
 
     // Get current model
     if (model_name == null) {

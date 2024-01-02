@@ -1175,7 +1175,7 @@ def plot_overall_vis(preds_df, error_type, cur_user, cur_model, n_topics=None, b
         ignorePeers=True,
     ).encode(
         x=alt.X('vis_pred_bin:Q', title="Our prediction of your rating", scale=alt.Scale(domain=(domain_min, domain_max))),
-        y=alt.Y('id:O', title="Comments (ordered by System toxicity rating)", axis=alt.Axis(values=list(range(0, max_items, 5))), sort='descending'),
+        y=alt.Y('id:O', title="Topics (ordered by System toxicity rating)", axis=alt.Axis(values=list(range(0, max_items, 5))), sort='descending'),
         color = alt.Color("key:O", scale=alt.Scale(
             domain=["System agrees: Non-toxic", "System agrees: Toxic", "System differs: Error > 1.5", "System differs: Error > 1.0", "System differs: Error > 0.5", "System differs: Error <=0.5"], 
             range=["white", "#cbcbcb", "red", "#ff7a5c", "#ffa894", "#ffd1c7"]),

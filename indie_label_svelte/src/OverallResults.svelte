@@ -19,18 +19,6 @@
     let topic_overview_spec = topic_overview_json;
     let topic_overview_view: View;
 
-    // // Overall Histogram
-    // let overall_hist_json = data["overall_perf"]["overall_hist_json"];
-    // let overall_hist_data = overall_hist_json["datasets"][overall_hist_json["data"]["name"]];
-    // let overall_hist_spec = overall_hist_json;
-    // let overall_hist_view: View;
-
-    // // Class-conditional Histogram
-    // let class_cond_plot_json = data["overall_perf"]["class_cond_plot_json"];
-    // let class_cond_plot_data = class_cond_plot_json["datasets"][class_cond_plot_json["data"]["name"]];
-    // let class_cond_plot_spec = class_cond_plot_json;
-    // let class_cond_plot_view: View;
-
 </script>
 
 <div>
@@ -83,73 +71,6 @@
             <VegaLite {topic_overview_data} spec={topic_overview_spec} bind:view={topic_overview_view}/>
         </div>
     </div>
-
-    <!-- Old visualizations -->
-    <!-- <div style="margin-top: 500px">
-        <h6>Overall Performance</h6>
-        <div class="row">
-            <div class="col s12">
-                <div id="overall_perf">
-                    <table>
-                        <tbody>
-                            <tr class="custom-blue">
-                                <td class="bold"
-                                    >System {data[
-                                        "overall_perf"
-                                    ]["metric"]} with YOUR labels</td
-                                >
-                                <td>
-                                    <span class="bold-large"
-                                        >{data[
-                                            "overall_perf"
-                                        ]["user_metric"]}</span
-                                    >
-                                    (Percentile: {data[
-                                        "overall_perf"
-                                    ]["user_percentile"]})
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="bold"
-                                    >System {data[
-                                        "overall_perf"
-                                    ]["metric"]} with OTHER USERS' labels</td
-                                >
-                                <td>
-                                    <span class="bold-large"
-                                        >{data[
-                                            "overall_perf"
-                                        ]["other_metric"]}</span
-                                    >
-                                    (95% CI: [{data[
-                                        "overall_perf"
-                                    ]["other_ci_low"]}, {data[
-                                        "overall_perf"
-                                    ]["other_ci_high"]}])
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col s8">
-                <VegaLite {overall_hist_data} spec={overall_hist_spec} bind:view={overall_hist_view}/>
-            </div>
-        </div>
-        
-        <h6>Performance Breakdown</h6>
-        <div class="row">
-            <div class="col s12">
-                <div class="row">
-                    <div class="col s12">
-                        <VegaLite {class_cond_plot_data} spec={class_cond_plot_spec} bind:view={class_cond_plot_view} />
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div> -->
 
 </div>
 <style>

@@ -8,7 +8,8 @@
     import Button, { Label } from "@smui/button";
     import LinearProgress from '@smui/linear-progress';
     import Svelecte from '../node_modules/svelecte/src/Svelecte.svelte';
-    import { user } from './stores/cur_user_store.js';
+
+    export let cur_user;
 
     let model_name = "";
     let personalized_models = [];
@@ -17,22 +18,11 @@
         "Create a new model",
         "Edit an existing model",
         "Tune your model for a topic area",
-        "Set up a group-based model",
+        // "Set up a group-based model",
     ];
     
     let clusters_for_tuning = [];
     let topic;
-
-    // Get current user
-    let cur_user;
-    user.subscribe(value => {
-        if (value != cur_user) {
-            cur_user = value;
-            personalized_models = [];
-            getLabeling();
-        }
-		cur_user = value;
-	});
 
     // Handle routing
     let label_mode = label_modes[0];
@@ -45,6 +35,7 @@
     } else if (req_label_mode == 2) {
         label_mode = label_modes[2];
     } else if (req_label_mode == 3) {
+        // Unused; previous group-based mode
         label_mode = label_modes[3];
     } 
 
@@ -172,7 +163,7 @@
                 </li>
             </ul>
 
-            <CommentTable mode={"train"} model_name={model_name}/>
+            <CommentTable mode={"train"} model_name={model_name} cur_user={cur_user}/>
         </div>
     {:else if label_mode == label_modes[1]}
         <!-- EXISTING MODEL -->
@@ -202,7 +193,7 @@
                 </li>
             </ul>
             {#key existing_model_name}
-                <CommentTable mode={"view"} model_name={existing_model_name}/>
+                <CommentTable mode={"view"} model_name={existing_model_name} cur_user={cur_user}/>
             {/key}
         </div>
     {:else if label_mode == label_modes[2]}
@@ -239,7 +230,7 @@
                         </li>
                     </ul>
                     {#key topic}
-                    <TopicTraining topic={topic} model_name={model_name} />
+                    <TopicTraining topic={topic} model_name={model_name} cur_user={cur_user}/>
                     {/key}                    
                 </div>
 

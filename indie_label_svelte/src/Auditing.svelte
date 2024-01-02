@@ -7,7 +7,6 @@
     import HelpTooltip from "./HelpTooltip.svelte";
     import TopicTraining from "./TopicTraining.svelte";
 
-    import { user } from './stores/cur_user_store.js';
     import { error_type } from './stores/error_type_store.js';
     import { topic_chosen } from './stores/cur_topic_store.js';
     import { model_chosen } from './stores/cur_model_store.js';
@@ -17,15 +16,13 @@
     import LayoutGrid, { Cell } from "@smui/layout-grid";
     import Radio from '@smui/radio';
     import FormField from '@smui/form-field';
-    import Card, { Content } from '@smui/card';
     import{ Wrapper } from '@smui/tooltip';
     import IconButton from '@smui/icon-button';
-    import Select, { Option } from "@smui/select";
     import Svelecte from '../node_modules/svelecte/src/Svelecte.svelte';
 
     export let personalized_model;
-    // export let topic;
     export let cur_error_type = "Both";
+    export let cur_user;
 
     let evidence = [];
     let show_audit_settings = false;
@@ -99,18 +96,7 @@
         use_group_model = true;
     }
     
-    // TEMP
     let promise_cluster = Promise.resolve(null);
-
-    // Get current user from store
-    let cur_user;
-    user.subscribe(value => {
-        if (value != cur_user) {
-            cur_user = value;
-            personalized_model = "";
-            getAuditSettings();
-        }
-	});
 
     // Get current topic from store
     let topic;
@@ -142,7 +128,6 @@
 
     async function updateTopicChosen() {
         if (topic != null) {
-            console.log("updateTopicChosen", topic)
             topic_chosen.update((value) => topic);
         }
     }
@@ -170,7 +155,6 @@
                 model_chosen.update((value) => personalized_model);
                 clusters = r["clusters"];
                 clusters_for_tuning = r["clusters_for_tuning"];
-                console.log("clusters", clusters); // TEMP
                 topic = clusters[0]["options"][0]["text"];
                 topic_chosen.update((value) => topic);
                 handleAuditButton();  // TEMP
@@ -230,7 +214,6 @@
 		const response = await fetch("./get_cluster_results?" + params);
 		const text = await response.text();
 		const data = JSON.parse(text);
-		console.log(topic);
 		return data;
 	}
 </script>
@@ -364,7 +347,7 @@
                     </li>
                 </ul>
                 {#key topic}
-                <TopicTraining topic={topic} />
+                <TopicTraining topic={topic} cur_user={cur_user}/>
                 {/key}                    
             </div>
 
