@@ -4,12 +4,11 @@
     
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
-    import LinearProgress from "@smui/linear-progress";
-    import Chip, { Set, Text } from '@smui/chips';
-    
+    import LinearProgress from "@smui/linear-progress";    
 
     export let clusters;
     export let personalized_model;
+    export let cur_user;
     export let evidence;
     export let width_pct = 80;
     export let use_model = true;
@@ -29,6 +28,7 @@
         let req_params = {
             cluster: cur_iter_cluster,
             topic_df_ids: topic_df_ids,
+            cur_user: cur_user,
             pers_model: personalized_model,
             example_sort: "descending", // TEMP
             comparison_group: "status_quo", // TEMP
@@ -41,9 +41,6 @@
         const response = await fetch("./get_cluster_results?" + params);
         const text = await response.text();
         const data = JSON.parse(text);
-        // if (data["cluster_comments"] == null) {
-        //     return false
-        // }
         topic_df_ids = data["topic_df_ids"];
         return data;
     }

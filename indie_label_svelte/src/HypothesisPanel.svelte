@@ -137,6 +137,7 @@
             cur_user: cur_user,
             reports: JSON.stringify(all_reports),
             scaffold_method: scaffold_method,
+            model: model,
         };
         let params = new URLSearchParams(req_params).toString();
         const response = await fetch("./save_reports?" + params);

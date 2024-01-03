@@ -37,13 +37,6 @@ alt.renderers.enable('altair_saver', fmts=['vega-lite', 'png'])
 
 # Data-loading
 module_dir = "./"
-perf_dir = f"data/perf/"
-
-# # TEMP reset
-# with open(f"./data/users_to_models.pkl", "wb") as f:
-#     users_to_models = {}
-#     pickle.dump(users_to_models, f)
-
 with open(os.path.join(module_dir, "data/input/ids_to_comments.pkl"), "rb") as f:
     ids_to_comments = pickle.load(f)
 with open(os.path.join(module_dir, "data/input/comments_to_ids.pkl"), "rb") as f:
@@ -55,9 +48,6 @@ train_df_ids = train_df["item_id"].unique().tolist()
 model_eval_df = pd.read_pickle(os.path.join(module_dir, "data/input/split_data/model_eval_df.pkl"))
 ratings_df_full = pd.read_pickle(os.path.join(module_dir, "data/input/ratings_df_full.pkl"))
 worker_info_df = pd.read_pickle("./data/input/worker_info_df.pkl")
-
-with open(f"./data/users_to_models.pkl", "rb") as f:
-    users_to_models = pickle.load(f)
 
 topic_ids = system_preds_df.topic_id
 topics = system_preds_df.topic
@@ -71,11 +61,17 @@ def get_toxic_threshold():
 
 def get_user_model_names(user):
     # Fetch the user's models
-    if user not in users_to_models:
-        users_to_models[user] = []
-    user_models = users_to_models[user]
-    user_models.sort()
-    return user_models
+    output_dir = f"./data/output"
+    users = [name for name in os.listdir(output_dir) if os.path.isdir(os.path.join(output_dir, name))]
+    if user not in users:
+        # User does not exist
+        return []
+    else:
+        # Fetch trained model names for the user
+        user_dir = f"./data/output/{user}"
+        user_models = [name for name in os.listdir(user_dir) if os.path.isdir(os.path.join(user_dir, name))]
+        user_models.sort()
+        return user_models
 
 def get_unique_topics():
     return unique_topics
@@ -121,6 +117,64 @@ internal_to_readable = {v: k for k, v in readable_to_internal.items()}
 
 def get_system_preds_df():
     return system_preds_df
+
+########################################
+# Data storage helper functions
+# Set up all directories for new user
+def setup_user_dirs(cur_user):
+    user_dir = f"./data/output/{cur_user}"
+    if not os.path.isdir(user_dir):
+        os.mkdir(user_dir)
+def setup_model_dirs(cur_user, cur_model):
+    model_dir = f"./data/output/{cur_user}/{cur_model}"
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir) # Set up model dir
+        # Set up subdirs
+        os.mkdir(os.path.join(model_dir, "labels"))
+        os.mkdir(os.path.join(model_dir, "perf"))
+def setup_user_model_dirs(cur_user, cur_model):
+    setup_user_dirs(cur_user)
+    setup_model_dirs(cur_user, cur_model)
+
+# Charts
+def get_chart_file(cur_user, cur_model):
+    chart_dir = f"./data/output/{cur_user}/{cur_model}"
+    return os.path.join(chart_dir, f"chart__overall_vis.pkl")
+
+# Labels
+def get_label_dir(cur_user, cur_model):
+    return f"./data/output/{cur_user}/{cur_model}/labels"
+def get_n_label_files(cur_user, cur_model):
+    label_dir = get_label_dir(cur_user, cur_model)
+    return len([name for name in os.listdir(label_dir) if os.path.isfile(os.path.join(label_dir, name))])
+def get_label_file(cur_user, cur_model, label_i=None):
+    if label_i is None:
+        # Get index to add on to end of list
+        label_i = get_n_label_files(cur_user, cur_model)
+    label_dir = get_label_dir(cur_user, cur_model)
+    return os.path.join(label_dir, f"{label_i}.pkl")
+
+# Performance
+def get_perf_dir(cur_user, cur_model):
+    return f"./data/output/{cur_user}/{cur_model}/perf"
+def get_n_perf_files(cur_user, cur_model):
+    perf_dir = get_perf_dir(cur_user, cur_model)
+    return len([name for name in os.listdir(perf_dir) if os.path.isfile(os.path.join(perf_dir, name))])
+def get_perf_file(cur_user, cur_model, perf_i=None):
+    if perf_i is None:
+        # Get index to add on to end of list
+        perf_i = get_n_perf_files(cur_user, cur_model)
+    perf_dir = get_perf_dir(cur_user, cur_model)
+    return os.path.join(perf_dir, f"{perf_i}.pkl")
+
+# Predictions dataframe
+def get_preds_file(cur_user, cur_model):
+    preds_dir = f"./data/output/{cur_user}/{cur_model}"
+    return os.path.join(preds_dir, f"preds_df.pkl")
+
+# Reports
+def get_reports_file(cur_user, cur_model):
+    return f"./data/output/{cur_user}/{cur_model}/reports.pkl"
 
 ########################################
 # General utils
@@ -182,23 +236,24 @@ def plot_metric_histogram(metric, user_metric, other_metric_vals, n_bins=10):
     return (bar + rule).interactive()
 
 # Generates the summary plot across all topics for the user
-def show_overall_perf(variant, error_type, cur_user, threshold=TOXIC_THRESHOLD, topic_vis_method="median"):
+def show_overall_perf(cur_model, error_type, cur_user, threshold=TOXIC_THRESHOLD, topic_vis_method="median"):
     # Your perf (calculate using model and testset)    
-    with open(os.path.join(module_dir, f"data/preds_dfs/{variant}.pkl"), "rb") as f:
+    preds_file = get_preds_file(cur_user, cur_model)
+    with open(preds_file, "rb") as f:
         preds_df = pickle.load(f)
 
-    # Read from file
-    chart_dir = "./data/charts"
-    chart_file = os.path.join(chart_dir, f"{cur_user}_{variant}.pkl")
+    chart_file = get_chart_file(cur_user, cur_model)
     if os.path.isfile(chart_file):
+        # Read from file if it exists
         with open(chart_file, "r") as f:
             topic_overview_plot_json = json.load(f)
     else:
+        # Otherwise, generate chart and save to file
         if topic_vis_method == "median":  # Default
             preds_df_grp = preds_df.groupby(["topic", "user_id"]).median()
         elif topic_vis_method == "mean":
             preds_df_grp = preds_df.groupby(["topic", "user_id"]).mean()
-        topic_overview_plot_json = plot_overall_vis(preds_df=preds_df_grp, n_topics=200, threshold=threshold, error_type=error_type, cur_user=cur_user, cur_model=variant)
+        topic_overview_plot_json = plot_overall_vis(preds_df=preds_df_grp, n_topics=200, threshold=threshold, error_type=error_type, cur_user=cur_user, cur_model=cur_model)
 
     return {
         "topic_overview_plot_json": json.loads(topic_overview_plot_json),
@@ -260,22 +315,23 @@ def get_grp_model_labels(n_label_per_bin, score_bins, grp_ids):
 
 ########################################
 # GET_PERSONALIZED_MODEL utils
-def fetch_existing_data(model_name, last_label_i):
+def fetch_existing_data(user, model_name):
     # Check if we have cached model performance
-    perf_dir = f"./data/perf/{model_name}"
-    label_dir = f"./data/labels/{model_name}"
-    if os.path.isdir(os.path.join(module_dir, perf_dir)):
+    n_perf_files = get_n_perf_files(user, model_name)
+    if n_perf_files > 0:
         # Fetch cached results
-        last_i = len([name for name in os.listdir(os.path.join(module_dir, perf_dir)) if os.path.isfile(os.path.join(module_dir, perf_dir, name))])
-        with open(os.path.join(module_dir, perf_dir, f"{last_i}.pkl"), "rb") as f:
+        perf_file = get_perf_file(user, model_name, n_perf_files - 1)  # Get last performance file
+        with open(perf_file, "rb") as f:
             mae, mse, rmse, avg_diff = pickle.load(f)
     else:
         raise Exception(f"Model {model_name} does not exist")
     
     # Fetch previous user-provided labels
     ratings_prev = None
-    if last_label_i > 0:
-        with open(os.path.join(module_dir, label_dir, f"{last_i}.pkl"), "rb") as f:
+    n_label_files = get_n_label_files(user, model_name)
+    if n_label_files > 0:
+        label_file = get_label_file(user, model_name, n_label_files - 1) # Get last label file
+        with open(label_file, "rb") as f:
             ratings_prev = pickle.load(f)
     return mae, mse, rmse, avg_diff, ratings_prev
 
@@ -283,15 +339,12 @@ def fetch_existing_data(model_name, last_label_i):
 # Trains an updated model with the specified name, user, and ratings
 # Saves ratings, performance metrics, and pre-computed predictions to files
 # - model_name: name of the model to train
-# - last_label_i: index of the last label file (0 if none exists)
 # - ratings: dictionary of comments to ratings
 # - user: user name
 # - top_n: number of comments to train on (used when a set was held out for original user study)
 # - topic: topic to train on (used when tuning for a specific topic)
-def train_updated_model(model_name, last_label_i, ratings, user, top_n=None, topic=None, debug=False):
+def train_updated_model(model_name, ratings, user, top_n=None, topic=None, debug=False):
     # Check if there is previously-labeled data; if so, combine it with this data
-    perf_dir = f"./data/perf/{model_name}"
-    label_dir = f"./data/labels/{model_name}"
     labeled_df = format_labeled_data(ratings) # Treat ratings as full batch of all ratings
     ratings_prev = None
 
@@ -303,9 +356,11 @@ def train_updated_model(model_name, last_label_i, ratings, user, top_n=None, top
         labeled_df = labeled_df.head(top_n)
     else:
         # For topic tuning, need to fetch old labels
-        if (last_label_i > 0):
+        n_label_files = get_n_label_files(user, model_name)
+        if n_label_files > 0:
             # Concatenate previous set of labels with this new batch of labels
-            with open(os.path.join(module_dir, label_dir, f"{last_label_i}.pkl"), "rb") as f:
+            label_file = get_label_file(user, model_name, n_label_files - 1) # Get last label file
+            with open(label_file, "rb") as f:
                 ratings_prev = pickle.load(f)
                 labeled_df_prev = format_labeled_data(ratings_prev)
                 labeled_df_prev = labeled_df_prev[labeled_df_prev["rating"] != -1]
@@ -314,7 +369,8 @@ def train_updated_model(model_name, last_label_i, ratings, user, top_n=None, top
     if debug:
         print("len ratings for training:", len(labeled_df))
     # Save this batch of labels
-    with open(os.path.join(module_dir, label_dir, f"{last_label_i + 1}.pkl"), "wb") as f:
+    label_file = get_label_file(user, model_name)
+    with open(label_file, "wb") as f:
         pickle.dump(ratings, f)
 
     # Train model
@@ -323,25 +379,16 @@ def train_updated_model(model_name, last_label_i, ratings, user, top_n=None, top
     # Compute performance metrics
     mae, mse, rmse, avg_diff = users_perf(cur_model)
     # Save performance metrics
-    if not os.path.isdir(os.path.join(module_dir, perf_dir)):
-        os.mkdir(os.path.join(module_dir, perf_dir))
-    last_perf_i = len([name for name in os.listdir(os.path.join(module_dir, perf_dir)) if os.path.isfile(os.path.join(module_dir, perf_dir, name))])
-    with open(os.path.join(module_dir, perf_dir, f"{last_perf_i + 1}.pkl"), "wb") as f:
+    perf_file = get_perf_file(user, model_name)
+    with open(perf_file, "wb") as f:
         pickle.dump((mae, mse, rmse, avg_diff), f)
 
     # Pre-compute predictions for full dataset
     cur_preds_df = get_preds_df(cur_model, ["A"], sys_eval_df=ratings_df_full)
     # Save pre-computed predictions
-    with open(os.path.join(module_dir, f"./data/preds_dfs/{model_name}.pkl"), "wb") as f:
+    preds_file = get_preds_file(user, model_name)
+    with open(preds_file, "wb") as f:
         pickle.dump(cur_preds_df, f)
-    
-    # Handle user
-    if user not in users_to_models:
-        users_to_models[user] = []  # New user
-    if model_name not in users_to_models[user]:
-        users_to_models[user].append(model_name)  # New model
-        with open(f"./data/users_to_models.pkl", "wb") as f:
-            pickle.dump(users_to_models, f)
 
     ratings_prev = ratings
     return mae, mse, rmse, avg_diff, ratings_prev
@@ -494,13 +541,12 @@ def train_model(train_df, model_eval_df, model_type="SVD", sim_type=None, user_b
     
     return algo, perf
 
-def plot_train_perf_results(model_name, mae):
-    perf_dir = f"./data/perf/{model_name}"
-    n_perf_files = len([name for name in os.listdir(os.path.join(module_dir, perf_dir)) if os.path.isfile(os.path.join(module_dir, perf_dir, name))])
-
+def plot_train_perf_results(user, model_name, mae):
+    n_perf_files = get_n_perf_files(user, model_name)
     all_rows = []
-    for i in range(1, n_perf_files + 1):
-        with open(os.path.join(module_dir, perf_dir, f"{i}.pkl"), "rb") as f:
+    for i in range(n_perf_files):
+        perf_file = get_perf_file(user, model_name, i)
+        with open(perf_file, "rb") as f:
             mae, mse, rmse, avg_diff = pickle.load(f)
             all_rows.append([i, mae, "Your MAE"])
         
@@ -779,9 +825,8 @@ def plot_overall_vis(preds_df, error_type, cur_user, cur_model, n_topics=None, b
     
     plot = (bkgd + annotation + chart + rule).properties(height=(plot_dim_height), width=plot_dim_width).resolve_scale(color='independent').to_json()
 
-    # Save to file
-    chart_dir = "./data/charts"
-    chart_file = os.path.join(chart_dir, f"{cur_user}_{cur_model}.pkl")
+    # Save to file    
+    chart_file = get_chart_file(cur_user, cur_model)
     with open(chart_file, "w") as f:
         json.dump(plot, f)
 

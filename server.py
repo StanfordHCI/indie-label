@@ -101,7 +101,7 @@ def get_audit():
         overall_perf = None
     else:
         overall_perf = utils.show_overall_perf(
-            variant=pers_model,
+            cur_model=pers_model,
             error_type=error_type,
             cur_user=cur_user,
             topic_vis_method=topic_vis_method,
@@ -117,6 +117,7 @@ def get_audit():
 @app.route("/get_cluster_results")
 def get_cluster_results(debug=DEBUG):
     pers_model = request.args.get("pers_model")
+    cur_user = request.args.get("cur_user")
     cluster = request.args.get("cluster")
     topic_df_ids = request.args.getlist("topic_df_ids")
     topic_df_ids = [int(val) for val in topic_df_ids[0].split(",") if val != ""]
@@ -130,7 +131,8 @@ def get_cluster_results(debug=DEBUG):
 
     # Prepare cluster df (topic_df)
     topic_df = None
-    with open(f"data/preds_dfs/{pers_model}.pkl", "rb") as f:
+    preds_file = utils.get_preds_file(cur_user, pers_model)
+    with open(preds_file, "rb") as f:
         topic_df = pickle.load(f)
     if search_type == "cluster":
         # Display examples with comment, your pred, and other users' pred
@@ -226,19 +228,12 @@ def get_group_model():
         grp_ids=grp_ids,
     )
 
-    # print("ratings_grp", ratings_grp)
-
     # Modify model name
     model_name = f"{model_name}_group_gender{sel_gender}_relig{sel_relig}_pol{sel_pol}_race{sel_race_orig}_lgbtq_{sel_lgbtq}"
-
-    label_dir = f"./data/labels/{model_name}"
-    # Create directory for labels if it doesn't yet exist
-    if not os.path.isdir(label_dir):
-        os.mkdir(label_dir)
-    last_label_i = len([name for name in os.listdir(label_dir) if (os.path.isfile(os.path.join(label_dir, name)) and name.endswith('.pkl'))])
+    utils.setup_user_model_dirs(user, model_name)
 
     # Train group model
-    mae, mse, rmse, avg_diff, ratings_prev = utils.train_updated_model(model_name, last_label_i, ratings_grp, user)
+    mae, mse, rmse, avg_diff, ratings_prev = utils.train_updated_model(model_name, ratings_grp, user)
 
     duration = time.time() - start
     print("Time to train/cache:", duration)
@@ -317,35 +312,33 @@ def get_comments_to_label_topic():
 ########################################
 # ROUTE: /GET_PERSONALIZED_MODEL
 @app.route("/get_personalized_model")
-def get_personalized_model():
+def get_personalized_model(debug=DEBUG):
     model_name = request.args.get("model_name")
     ratings_json = request.args.get("ratings")
     mode = request.args.get("mode")
     user = request.args.get("user")
     ratings = json.loads(ratings_json)
-    print(ratings)
-    start = time.time()
+    if debug:
+        print(ratings)
+        start = time.time()
 
-    label_dir = f"./data/labels/{model_name}"
-    # Create directory for labels if it doesn't yet exist
-    if not os.path.isdir(label_dir):
-        os.mkdir(label_dir)
-    last_label_i = len([name for name in os.listdir(label_dir) if (os.path.isfile(os.path.join(label_dir, name)) and name.endswith('.pkl'))])
+    utils.setup_user_model_dirs(user, model_name)
 
     # Handle existing or new model cases
     if mode == "view":
         # Fetch prior model performance
-        mae, mse, rmse, avg_diff, ratings_prev = utils.fetch_existing_data(model_name, last_label_i)
+        mae, mse, rmse, avg_diff, ratings_prev = utils.fetch_existing_data(user, model_name)
         
     elif mode == "train":
         # Train model and cache predictions using new labels
         print("get_personalized_model train")
-        mae, mse, rmse, avg_diff, ratings_prev = utils.train_updated_model(model_name, last_label_i, ratings, user)
-        
-    duration = time.time() - start
-    print("Time to train/cache:", duration) 
+        mae, mse, rmse, avg_diff, ratings_prev = utils.train_updated_model(model_name, ratings, user)
+    
+    if debug:
+        duration = time.time() - start
+        print("Time to train/cache:", duration) 
 
-    perf_plot, mae_status = utils.plot_train_perf_results(model_name, mae)
+    perf_plot, mae_status = utils.plot_train_perf_results(user, model_name, mae)
     perf_plot_json = perf_plot.to_json()
 
     def round_metric(x):
@@ -358,7 +351,6 @@ def get_personalized_model():
         "mse": round_metric(mse),
         "rmse": round_metric(rmse),
         "avg_diff": round_metric(avg_diff),
-        "duration": duration,
         "ratings_prev": ratings_prev,
         "perf_plot_json": json.loads(perf_plot_json),
     }
@@ -379,17 +371,12 @@ def get_personalized_model_topic():
 
     # Modify model name
     model_name = f"{model_name}_{topic}"
-
-    label_dir = f"./data/labels/{model_name}"
-    # Create directory for labels if it doesn't yet exist
-    if not os.path.isdir(label_dir):
-        os.mkdir(label_dir)
-    last_label_i = len([name for name in os.listdir(label_dir) if (os.path.isfile(os.path.join(label_dir, name)) and name.endswith('.pkl'))])
+    utils.setup_user_model_dirs(user, model_name)
 
     # Handle existing or new model cases
     # Train model and cache predictions using new labels
     print("get_personalized_model_topic train")
-    mae, mse, rmse, avg_diff, ratings_prev = utils.train_updated_model(model_name, last_label_i, ratings, user, topic=topic)
+    mae, mse, rmse, avg_diff, ratings_prev = utils.train_updated_model(model_name, ratings, user, topic=topic)
         
     duration = time.time() - start
     print("Time to train/cache:", duration) 
@@ -416,15 +403,13 @@ def get_reports():
     if topic_vis_method == "null":
         topic_vis_method = "fp_fn"
 
-    # Load reports for current user from stored files
-    report_dir = f"./data/user_reports"
-    user_file = os.path.join(report_dir, f"{cur_user}_{scaffold_method}.pkl")
-
-    if not os.path.isfile(user_file):
+    # Load reports for current user from stored file
+    reports_file = utils.get_reports_file(cur_user, model)
+    if not os.path.isfile(reports_file):
         if scaffold_method == "fixed":
             reports = get_fixed_scaffold()
         elif (scaffold_method == "personal" or scaffold_method == "personal_group" or scaffold_method == "personal_test"):
-            reports = get_personal_scaffold(model, topic_vis_method)
+            reports = get_personal_scaffold(cur_user, model, topic_vis_method)
         elif scaffold_method == "prompts":
             reports = get_prompts_scaffold()
         elif scaffold_method == "tutorial":
@@ -442,7 +427,7 @@ def get_reports():
             ]
     else:
         # Load from pickle file
-        with open(user_file, "rb") as f:
+        with open(reports_file, "rb") as f:
             reports = pickle.load(f)
 
     results = {
@@ -544,11 +529,12 @@ def get_topic_errors(df, topic_vis_method, threshold=2):
         
     return topic_errors
 
-def get_personal_scaffold(model, topic_vis_method, n_topics=200, n=5):
+def get_personal_scaffold(cur_user, model, topic_vis_method, n_topics=200, n=5):
     threshold = utils.get_toxic_threshold()
 
     # Get topics with greatest amount of error
-    with open(f"./data/preds_dfs/{model}.pkl", "rb") as f:
+    preds_file = utils.get_preds_file(cur_user, model)
+    with open(preds_file, "rb") as f:
         preds_df = pickle.load(f)
         system_preds_df = utils.get_system_preds_df()
         preds_df_mod = preds_df.merge(system_preds_df, on="item_id", how="left", suffixes=('', '_sys'))
@@ -653,11 +639,11 @@ def save_reports():
     reports_json = request.args.get("reports")
     reports = json.loads(reports_json)
     scaffold_method = request.args.get("scaffold_method")
+    model = request.args.get("model")
 
-    # Save reports for current user to stored files
-    report_dir = f"./data/user_reports"
-    # Save to pickle file
-    with open(os.path.join(report_dir, f"{cur_user}_{scaffold_method}.pkl"), "wb") as f:
+    # Save reports for current user to file
+    reports_file = utils.get_reports_file(cur_user, model)
+    with open(reports_file, "wb") as f:
         pickle.dump(reports, f)
 
     results = {

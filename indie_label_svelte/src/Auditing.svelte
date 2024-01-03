@@ -109,8 +109,7 @@
         if (!personalized_models.includes(personalized_model)) {
             personalized_models.push(personalized_model);
         }
-        handleAuditButton();
-        handleClusterButton(); // re-render cluster results
+        getAuditResults();
 	});
 
     // Save current error type
@@ -120,16 +119,13 @@
         handleClusterButton();
 	}
 
-    // Handle topic-specific training
-    // let topic_training = null;
-
     async function updateTopicChosen() {
         if (topic != null) {
             topic_chosen.update((value) => topic);
         }
     }
 
-    function getAuditSettings() {
+    function getAuditResults() {
         let req_params = {
             user: cur_user,
             scaffold_method: scaffold_method,
@@ -152,12 +148,12 @@
                 clusters_for_tuning = r["clusters_for_tuning"];
                 topic = clusters[0]["options"][0]["text"];
                 topic_chosen.update((value) => topic);
-                handleAuditButton();  // TEMP
-                handleClusterButton(); // TEMP
+                handleAuditButton(); 
+                handleClusterButton();
             });
     }
     onMount(async () => {
-        getAuditSettings();
+        getAuditResults();
     });
 
     function handleAuditButton() {
@@ -193,6 +189,7 @@
 		let req_params = {
 			cluster: topic,
 			topic_df_ids: [],
+            cur_user: cur_user,
 			pers_model: personalized_model,
 			example_sort: "descending", // TEMP
 			comparison_group: "status_quo", // TEMP
@@ -422,7 +419,7 @@
         <p>Next, you can optionally search for more comments to serve as evidence through manual keyword search (for individual words or phrases).</p>
         <div class="section_indent">
             {#key error_type}
-            <KeywordSearch clusters={clusters} personalized_model={personalized_model} bind:evidence={evidence} use_model={use_model} on:change/>
+            <KeywordSearch clusters={clusters} personalized_model={personalized_model} cur_user={cur_user} bind:evidence={evidence} use_model={use_model} on:change/>
             {/key}
         </div>
     </div>
