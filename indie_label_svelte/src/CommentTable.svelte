@@ -88,11 +88,14 @@
             user: cur_user,
         };
         let params = new URLSearchParams(req_params).toString();
-        const response = await fetch("./get_personalized_model?" + params);
-        const text = await response.text();
-        const data = JSON.parse(text);
-        to_label = data["ratings_prev"];
-        model_chosen.update((value) => model_name);
+        const data = await fetch("./get_personalized_model?" + params)
+            .then((r) => r.text())
+            .then(function (text) {
+                let data = JSON.parse(text);
+                to_label = data["ratings_prev"];
+                model_chosen.update((value) => model_name);
+                return data;
+            });
         return data;
     }
 </script>

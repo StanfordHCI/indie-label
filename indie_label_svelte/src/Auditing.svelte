@@ -158,12 +158,15 @@
 
     function handleAuditButton() {
         model_chosen.update((value) => personalized_model);
-        promise = getAudit();
+        if (personalized_model == "" || personalized_model == undefined) {
+            return;
+        }
+        promise = getAudit(personalized_model);
     }
 
-    async function getAudit() {
+    async function getAudit(pers_model) {
         let req_params = {
-            pers_model: personalized_model,
+            pers_model: pers_model,
             perf_metric: "avg_diff",
             breakdown_sort: "difference",
             n_topics: 10,
@@ -179,18 +182,18 @@
     }
 
     function handleClusterButton() {
-		promise_cluster = getCluster();
+		promise_cluster = getCluster(personalized_model);
 	}
 
-	async function getCluster() {
-        if (personalized_model == "" || personalized_model == undefined) {
+	async function getCluster(pers_model) {
+        if (pers_model == "" || pers_model == undefined) {
             return null;
         }
 		let req_params = {
 			cluster: topic,
 			topic_df_ids: [],
             cur_user: cur_user,
-			pers_model: personalized_model,
+			pers_model: pers_model,
 			example_sort: "descending", // TEMP
 			comparison_group: "status_quo", // TEMP
 			search_type: "cluster",

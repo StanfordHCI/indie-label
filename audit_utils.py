@@ -139,7 +139,7 @@ def setup_user_model_dirs(cur_user, cur_model):
 # Charts
 def get_chart_file(cur_user, cur_model):
     chart_dir = f"./data/output/{cur_user}/{cur_model}"
-    return os.path.join(chart_dir, f"chart__overall_vis.pkl")
+    return os.path.join(chart_dir, f"chart_overall_vis.json")
 
 # Labels
 def get_label_dir(cur_user, cur_model):
@@ -174,7 +174,7 @@ def get_preds_file(cur_user, cur_model):
 
 # Reports
 def get_reports_file(cur_user, cur_model):
-    return f"./data/output/{cur_user}/{cur_model}/reports.pkl"
+    return f"./data/output/{cur_user}/{cur_model}/reports.json"
 
 ########################################
 # General utils
@@ -236,14 +236,14 @@ def plot_metric_histogram(metric, user_metric, other_metric_vals, n_bins=10):
     return (bar + rule).interactive()
 
 # Generates the summary plot across all topics for the user
-def show_overall_perf(cur_model, error_type, cur_user, threshold=TOXIC_THRESHOLD, topic_vis_method="median"):
+def show_overall_perf(cur_model, error_type, cur_user, threshold=TOXIC_THRESHOLD, topic_vis_method="median", use_cache=True):
     # Your perf (calculate using model and testset)    
     preds_file = get_preds_file(cur_user, cur_model)
     with open(preds_file, "rb") as f:
         preds_df = pickle.load(f)
 
     chart_file = get_chart_file(cur_user, cur_model)
-    if os.path.isfile(chart_file):
+    if use_cache and os.path.isfile(chart_file):
         # Read from file if it exists
         with open(chart_file, "r") as f:
             topic_overview_plot_json = json.load(f)
@@ -254,6 +254,9 @@ def show_overall_perf(cur_model, error_type, cur_user, threshold=TOXIC_THRESHOLD
         elif topic_vis_method == "mean":
             preds_df_grp = preds_df.groupby(["topic", "user_id"]).mean()
         topic_overview_plot_json = plot_overall_vis(preds_df=preds_df_grp, n_topics=200, threshold=threshold, error_type=error_type, cur_user=cur_user, cur_model=cur_model)
+        # Save to file    
+        with open(chart_file, "w") as f:
+            json.dump(topic_overview_plot_json, f)
 
     return {
         "topic_overview_plot_json": json.loads(topic_overview_plot_json),
@@ -345,7 +348,7 @@ def fetch_existing_data(user, model_name):
 # - topic: topic to train on (used when tuning for a specific topic)
 def train_updated_model(model_name, ratings, user, top_n=None, topic=None, debug=False):
     # Check if there is previously-labeled data; if so, combine it with this data
-    labeled_df = format_labeled_data(ratings) # Treat ratings as full batch of all ratings
+    labeled_df = format_labeled_data(ratings, worker_id=user) # Treat ratings as full batch of all ratings
     ratings_prev = None
 
     # Filter out rows with "unsure" (-1)
@@ -362,7 +365,7 @@ def train_updated_model(model_name, ratings, user, top_n=None, topic=None, debug
             label_file = get_label_file(user, model_name, n_label_files - 1) # Get last label file
             with open(label_file, "rb") as f:
                 ratings_prev = pickle.load(f)
-                labeled_df_prev = format_labeled_data(ratings_prev)
+                labeled_df_prev = format_labeled_data(ratings_prev, worker_id=user)
                 labeled_df_prev = labeled_df_prev[labeled_df_prev["rating"] != -1]
                 ratings.update(ratings_prev) # append old ratings to ratings
                 labeled_df = pd.concat([labeled_df_prev, labeled_df])
@@ -377,23 +380,26 @@ def train_updated_model(model_name, ratings, user, top_n=None, topic=None, debug
     cur_model, _, _, _ = train_user_model(ratings_df=labeled_df)
     
     # Compute performance metrics
-    mae, mse, rmse, avg_diff = users_perf(cur_model)
+    mae, mse, rmse, avg_diff = users_perf(cur_model, worker_id=user)
     # Save performance metrics
     perf_file = get_perf_file(user, model_name)
     with open(perf_file, "wb") as f:
         pickle.dump((mae, mse, rmse, avg_diff), f)
 
     # Pre-compute predictions for full dataset
-    cur_preds_df = get_preds_df(cur_model, ["A"], sys_eval_df=ratings_df_full)
+    cur_preds_df = get_preds_df(cur_model, [user], sys_eval_df=ratings_df_full)
     # Save pre-computed predictions
     preds_file = get_preds_file(user, model_name)
     with open(preds_file, "wb") as f:
         pickle.dump(cur_preds_df, f)
 
+    # Replace cached summary plot if it exists
+    show_overall_perf(cur_model=model_name, error_type="Both", cur_user=user, use_cache=False)
+
     ratings_prev = ratings
     return mae, mse, rmse, avg_diff, ratings_prev
 
-def format_labeled_data(ratings, worker_id="A"):    
+def format_labeled_data(ratings, worker_id):    
     all_rows = []
     for comment, rating in ratings.items():
         comment_id = comments_to_ids[comment]
@@ -403,7 +409,7 @@ def format_labeled_data(ratings, worker_id="A"):
     df = pd.DataFrame(all_rows, columns=["user_id", "item_id", "rating"])
     return df
 
-def users_perf(model, sys_eval_df=sys_eval_df, worker_id="A"):
+def users_perf(model, worker_id, sys_eval_df=sys_eval_df):
     # Load the full empty dataset
     sys_eval_comment_ids = sys_eval_df.item_id.unique().tolist()
     empty_ratings_rows = [[worker_id, c_id, 0] for c_id in sys_eval_comment_ids]
@@ -423,7 +429,7 @@ def users_perf(model, sys_eval_df=sys_eval_df, worker_id="A"):
     df.dropna(subset = ["pred"], inplace=True)
     df["rating"] = df.rating.astype("int32")
 
-    perf_metrics = get_overall_perf(df, "A") # mae, mse, rmse, avg_diff  
+    perf_metrics = get_overall_perf(df, worker_id) # mae, mse, rmse, avg_diff  
     return perf_metrics
 
 def get_overall_perf(preds_df, user_id):    
@@ -565,24 +571,24 @@ def plot_train_perf_results(user, model_name, mae):
         width=500,
     )
 
-    PCT_50 = 0.591
-    PCT_75 = 0.662
-    PCT_90 = 0.869
+    # Manually set for now
+    mae_good = 1.0
+    mae_okay = 1.2
 
     plot_dim_width = 500
     domain_min = 0.0
     domain_max = 2.0
     bkgd = alt.Chart(pd.DataFrame({
-        "start": [PCT_90, PCT_75, domain_min],
-        "stop": [domain_max, PCT_90, PCT_75],
-        "bkgd": ["Needs improvement (< top 90%)", "Okay (top 90%)", "Good (top 75%)"],
+        "start": [mae_okay, mae_good, domain_min],
+        "stop": [domain_max, mae_okay, mae_good],
+        "bkgd": ["Needs improvement", "Okay", "Good"],
     })).mark_rect(opacity=0.2).encode(
-        y=alt.Y("start:Q", scale=alt.Scale(domain=[0, domain_max])),
-        y2=alt.Y2("stop:Q"),
+        y=alt.Y("start:Q", scale=alt.Scale(domain=[0, domain_max]), title=""),
+        y2=alt.Y2("stop:Q", title="Performance (MAE)"),
         x=alt.value(0),
         x2=alt.value(plot_dim_width),
         color=alt.Color("bkgd:O", scale=alt.Scale(
-            domain=["Needs improvement (< top 90%)", "Okay (top 90%)", "Good (top 75%)"], 
+            domain=["Needs improvement", "Okay", "Good"], 
             range=["red", "yellow", "green"]),
             title="How good is your MAE?"
         )
@@ -590,12 +596,12 @@ def plot_train_perf_results(user, model_name, mae):
 
     plot = (bkgd + chart).properties(width=plot_dim_width).resolve_scale(color='independent')
     mae_status = None
-    if mae < PCT_75:
-        mae_status = "Your MAE is in the <b>Good</b> range, which means that it's in the top 75% of scores compared to other users. Your model looks good to go."
-    elif mae < PCT_90:
-        mae_status = "Your MAE is in the <b>Okay</b> range, which means that it's in the top 90% of scores compared to other users. Your model can be used, but you can provide additional labels to improve it."
+    if mae < mae_good:
+        mae_status = "Your MAE is in the <b>Good</b> range. Your model looks ready to go."
+    elif mae < mae_okay:
+        mae_status = "Your MAE is in the <b>Okay</b> range. Your model can be used, but you can provide additional labels to improve it."
     else:
-        mae_status = "Your MAE is in the <b>Needs improvement</b> range, which means that it's in below the top 95% of scores compared to other users. Your model may need additional labels to improve."
+        mae_status = "Your MAE is in the <b>Needs improvement</b> range. Your model may need additional labels to improve."
     return plot, mae_status
 
 ########################################
@@ -724,7 +730,7 @@ def plot_overall_vis(preds_df, error_type, cur_user, cur_model, n_topics=None, b
         df = df[df["topic_id"] < n_topics]
     
     df["vis_pred_bin"], out_bins = pd.cut(df["pred"], bins, labels=VIS_BINS_LABELS, retbins=True)
-    df = df[df["user_id"] == "A"].sort_values(by=["item_id"]).reset_index()
+    df = df[df["user_id"] == cur_user].sort_values(by=["item_id"]).reset_index()
     df["system_label"] = [("toxic" if r > threshold else "non-toxic") for r in df[sys_col].tolist()]
     df["threshold"] = [threshold for r in df[sys_col].tolist()]
     df["key"] = [get_key(sys, user, threshold) for sys, user in zip(df[sys_col].tolist(), df["pred"].tolist())]
@@ -824,21 +830,15 @@ def plot_overall_vis(preds_df, error_type, cur_user, cur_model, n_topics=None, b
     )
     
     plot = (bkgd + annotation + chart + rule).properties(height=(plot_dim_height), width=plot_dim_width).resolve_scale(color='independent').to_json()
-
-    # Save to file    
-    chart_file = get_chart_file(cur_user, cur_model)
-    with open(chart_file, "w") as f:
-        json.dump(plot, f)
-
     return plot
 
 # Plots cluster results histogram (each block is a comment), but *without* a model 
 # as a point of reference (in contrast to plot_overall_vis_cluster)
-def plot_overall_vis_cluster_no_model(preds_df, n_comments=None, bins=VIS_BINS, threshold=TOXIC_THRESHOLD, sys_col="rating_sys"):
+def plot_overall_vis_cluster_no_model(cur_user, preds_df, n_comments=None, bins=VIS_BINS, threshold=TOXIC_THRESHOLD, sys_col="rating_sys"):
     df = preds_df.copy().reset_index()
     
     df["vis_pred_bin"], out_bins = pd.cut(df[sys_col], bins, labels=VIS_BINS_LABELS, retbins=True)
-    df = df[df["user_id"] == "A"].sort_values(by=[sys_col]).reset_index()
+    df = df[df["user_id"] == cur_user].sort_values(by=[sys_col]).reset_index()
     df["system_label"] = [("toxic" if r > threshold else "non-toxic") for r in df[sys_col].tolist()]
     df["key"] = [get_key_no_model(sys, threshold) for sys in df[sys_col].tolist()]
     df["category"] = df.apply(lambda row: get_category(row), axis=1)
@@ -930,11 +930,11 @@ def plot_overall_vis_cluster_no_model(preds_df, n_comments=None, bins=VIS_BINS, 
     return final_plot, df
 
 # Plots cluster results histogram (each block is a comment) *with* a model as a point of reference
-def plot_overall_vis_cluster(preds_df, error_type, n_comments=None, bins=VIS_BINS, threshold=TOXIC_THRESHOLD, sys_col="rating_sys"):
+def plot_overall_vis_cluster(cur_user, preds_df, error_type, n_comments=None, bins=VIS_BINS, threshold=TOXIC_THRESHOLD, sys_col="rating_sys"):
     df = preds_df.copy().reset_index()
     
     df["vis_pred_bin"], out_bins = pd.cut(df["pred"], bins, labels=VIS_BINS_LABELS, retbins=True)
-    df = df[df["user_id"] == "A"].sort_values(by=[sys_col]).reset_index(drop=True)
+    df = df[df["user_id"] == cur_user].sort_values(by=[sys_col]).reset_index(drop=True)
     df["system_label"] = [("toxic" if r > threshold else "non-toxic") for r in df[sys_col].tolist()]
     df["key"] = [get_key(sys, user, threshold) for sys, user in zip(df[sys_col].tolist(), df["pred"].tolist())]
     df["category"] = df.apply(lambda row: get_category(row), axis=1)

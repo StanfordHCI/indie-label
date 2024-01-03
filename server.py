@@ -166,10 +166,10 @@ def get_cluster_results(debug=DEBUG):
     # Prepare overview plot for the cluster
     if use_model:
         # Display results with the model as a reference point
-        cluster_overview_plot_json, sampled_df = utils.plot_overall_vis_cluster(topic_df, error_type=error_type, n_comments=500)
+        cluster_overview_plot_json, sampled_df = utils.plot_overall_vis_cluster(cur_user, topic_df, error_type=error_type, n_comments=500)
     else:
         # Display results without a model
-        cluster_overview_plot_json, sampled_df = utils.plot_overall_vis_cluster_no_model(topic_df, n_comments=500)
+        cluster_overview_plot_json, sampled_df = utils.plot_overall_vis_cluster_no_model(cur_user, topic_df, n_comments=500)
 
     cluster_comments = utils.get_cluster_comments(sampled_df,error_type=error_type, use_model=use_model)  # New version of cluster comment table
 
@@ -428,7 +428,7 @@ def get_reports():
     else:
         # Load from pickle file
         with open(reports_file, "rb") as f:
-            reports = pickle.load(f)
+            reports = json.load(f)
 
     results = {
         "reports": reports,
@@ -538,7 +538,7 @@ def get_personal_scaffold(cur_user, model, topic_vis_method, n_topics=200, n=5):
         preds_df = pickle.load(f)
         system_preds_df = utils.get_system_preds_df()
         preds_df_mod = preds_df.merge(system_preds_df, on="item_id", how="left", suffixes=('', '_sys'))
-        preds_df_mod = preds_df_mod[preds_df_mod["user_id"] == "A"].sort_values(by=["item_id"]).reset_index()
+        preds_df_mod = preds_df_mod[preds_df_mod["user_id"] == cur_user].sort_values(by=["item_id"]).reset_index()
         preds_df_mod = preds_df_mod[preds_df_mod["topic_id"] < n_topics]
 
         if topic_vis_method == "median":
@@ -643,8 +643,8 @@ def save_reports():
 
     # Save reports for current user to file
     reports_file = utils.get_reports_file(cur_user, model)
-    with open(reports_file, "wb") as f:
-        pickle.dump(reports, f)
+    with open(reports_file, "w", encoding ='utf8') as f:
+        json.dump(reports, f)
 
     results = {
         "status": "success",
