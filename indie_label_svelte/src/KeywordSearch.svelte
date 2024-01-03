@@ -17,7 +17,6 @@
     let topic_df_ids = [];
     let promise_iter_cluster = Promise.resolve(null);
     let keyword = null;
-    let n_neighbors = null;
     let cur_iter_cluster = null;
     let history = [];
 
@@ -30,13 +29,11 @@
         let req_params = {
             cluster: cur_iter_cluster,
             topic_df_ids: topic_df_ids,
-            n_examples: 500, // TEMP
             pers_model: personalized_model,
             example_sort: "descending", // TEMP
             comparison_group: "status_quo", // TEMP
             search_type: search_type,
             keyword: keyword,
-            n_neighbors: n_neighbors,
             error_type: cur_error_type,
         };
         console.log("topic_df_ids", topic_df_ids);

@@ -1,9 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
-	import IterativeClustering from "./IterativeClustering.svelte";
 	import Button, { Label } from "@smui/button";
 	import Textfield from '@smui/textfield';
-	import LinearProgress from "@smui/linear-progress";
 
     export let ind;
 	export let hunch;
@@ -32,7 +30,6 @@
 
 <div>
 	<div>
-		<!-- <h6>Hunch {ind + 1}</h6> -->
 		<h6>Topic:</h6>
 		{topic}
 	</div>
@@ -46,13 +43,6 @@
 			label="My current hunch is that..."
 		>
 		</Textfield>
-		<!-- <Button
-			on:click={handleTestOnExamples}
-			class="button_float_right spacing_vert"
-			variant="outlined"
-		>
-			<Label>Test on examples</Label>
-		</Button> -->
 	</div>
 
 	<div class="spacing_vert">
@@ -63,23 +53,7 @@
             <Label>Submit</Label>
         </Button>
     </div>
-
-	<!-- {#await example_block}
-        <div class="app_loading">
-            <LinearProgress indeterminate />
-        </div>
-    {:then} -->
-		<!-- {#if example_block}
-			<IterativeClustering clusters={clusters} ind={ind + 1} personalized_model={model} />
-		{/if} -->
-    <!-- {:catch error}
-        <p style="color: red">{error.message}</p>
-    {/await} -->
 </div>
 
 <style>
-	/* * {
-        z-index: 11;
-        overflow-x: hidden;
-    } */
 </style>

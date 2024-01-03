@@ -51,8 +51,6 @@
     ]
     
     let personalized_models = [];
-    let breakdown_category;
-    let breakdown_categories = [];
     let systems = ["YouSocial comment toxicity classifier"]; // Only one system for now
     let clusters = [];
     let clusters_for_tuning = []
@@ -72,7 +70,6 @@
     let audit_type;
     if (scaffold_method == "fixed" || scaffold_method == "personal" || scaffold_method == "personal_group" || scaffold_method == "personal_test" || scaffold_method == "personal_cluster" || scaffold_method == "topic_train" || scaffold_method == "prompts") {
         audit_type = audit_types[1];
-        // audit_type = audit_types[0];
     } else {
         // No scaffolding mode or tutorial
         audit_type = audit_types[0];
@@ -112,7 +109,7 @@
         if (!personalized_models.includes(personalized_model)) {
             personalized_models.push(personalized_model);
         }
-
+        handleAuditButton();
         handleClusterButton(); // re-render cluster results
 	});
 
@@ -142,8 +139,6 @@
             .then((r) => r.text())
             .then(function (r_orig) {
                 let r = JSON.parse(r_orig);
-                breakdown_categories = r["breakdown_categories"];
-                breakdown_category = breakdown_categories[0];
                 personalized_models = r["personalized_models"];
                 if (use_group_model) {
                     let personalized_model_grp = r["personalized_model_grp"];
@@ -173,7 +168,6 @@
     async function getAudit() {
         let req_params = {
             pers_model: personalized_model,
-            breakdown_axis: breakdown_category,
             perf_metric: "avg_diff",
             breakdown_sort: "difference",
             n_topics: 10,
@@ -199,13 +193,11 @@
 		let req_params = {
 			cluster: topic,
 			topic_df_ids: [],
-			n_examples: 500, // TEMP
 			pers_model: personalized_model,
 			example_sort: "descending", // TEMP
 			comparison_group: "status_quo", // TEMP
 			search_type: "cluster",
 			keyword: "",
-			n_neighbors: 0,
             error_type: cur_error_type,
             use_model: use_model,
             scaffold_method: scaffold_method,
@@ -223,16 +215,13 @@
     <div>
         <div style="margin-top: 30px">
             <span class="head_3">Auditing</span>
-            <IconButton 
-                class="material-icons grey_button"
-                size="normal"
-                on:click={() => (show_audit_settings = !show_audit_settings)}
-            >
-                help_outline
-            </IconButton>
         </div>
         <div style="width: 80%">
+            {#if personalized_model}
             <p>In this section, we'll be auditing the content moderation system. Here, you’ll be aided by a personalized model that will help direct your attention towards potential problem areas in the model’s performance. This model isn’t meant to be perfect, but is designed to help you better focus on areas that need human review.</p>
+            {:else}
+            <p>Please first train your personalized model by following the steps in the "Labeling" tab (click the top left tab above).</p>
+            {/if}
         </div>
         
         {#if show_audit_settings}
@@ -282,11 +271,14 @@
                 </LayoutGrid>
             </div>
         </div>
+        {/if}
+        {#if personalized_model}
         <p>Current model: {personalized_model}</p>
         {/if}
     </div>
 
     <!-- 1: All topics overview -->
+    {#if personalized_model}
     {#if audit_type == audit_types[0]}
     <div class="audit_section">
         <div class="head_5">Overview of all topics</div>
@@ -440,7 +432,7 @@
         <div class="head_5">Finalize your current report</div>
         <p>Finally, review the report you've generated on the side panel and provide a brief summary of the problem you see. You may also list suggestions or insights into addressing this problem if you have ideas. This report will be directly used by the model developers to address the issue you've raised</p>
     </div>
-    
+    {/if}
 </div>
 
 <style>

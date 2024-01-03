@@ -17,7 +17,7 @@
     let label_modes = [
         "Create a new model",
         "Edit an existing model",
-        "Tune your model for a topic area",
+        // "Tune your model for a topic area",
         // "Set up a group-based model",
     ];
     
@@ -33,6 +33,7 @@
     } else if (req_label_mode == 1) {
         label_mode = label_modes[1];
     } else if (req_label_mode == 2) {
+        // Unused; previous topic-based mode
         label_mode = label_modes[2];
     } else if (req_label_mode == 3) {
         // Unused; previous group-based mode

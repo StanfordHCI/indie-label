@@ -225,6 +225,7 @@
                 <Button 
                     on:click={() => (open = !open)}
                     color="primary"
+                    disabled={model == null}
                     style="float: right; padding: 10px; margin-right: 10px;"
                 >
                     {#if open}
@@ -239,6 +240,11 @@
         </div>
     </div>
 
+    {#if model == null}
+    <div class="panel_contents">
+        <p>You can start to author audit reports in this panel after you've trained your personalized model in the "Labeling" tab.</p>
+    </div>
+    {:else}
     <div class="panel_contents">  
         <!-- Drawer -->
         {#await promise}
@@ -491,7 +497,7 @@
             </div>
         </div>
     </div>
-
+    {/if}
     <!-- TEMP -->
     <!-- {#key model}
         <div>Model: {model}</div> 
