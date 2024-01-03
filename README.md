@@ -15,7 +15,7 @@ This repo shares our implementation of **IndieLabel**—an interactive web appli
     ```
     $ pip install -r requirements.txt
     ```
-- Download and unzip the `data` sub-directory from [this Drive folder](https://drive.google.com/file/d/1In9qAzV5t--rMmEH2R5miWpZ4IQStgFu/view?usp=sharing) and place it in the repo directory (334.2MB zipped, 549.1MB unzipped).
+- Download and unzip the `data` sub-directory from [this Drive folder](https://drive.google.com/file/d/1js0HAwBpEcoRdT9nkGY0Mc5Falkpsonl/view?usp=sharing) and place it in the repo directory (39.7MB zipped, 124.6MB unzipped).
 
 
 - Start the Flask server:
