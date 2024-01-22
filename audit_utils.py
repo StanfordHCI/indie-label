@@ -23,6 +23,7 @@ import time
 from sentence_transformers import SentenceTransformer, util
 import torch
 from bertopic import BERTopic
+from datetime import date
 
 ########################################
 # PRE-LOADING
@@ -315,6 +316,95 @@ def get_grp_model_labels(n_label_per_bin, score_bins, grp_ids):
     ratings_grp = {ids_to_comments[int(r["item_id"])]: r["rating"] for _, r in train_df_grp_avg.iterrows()}
 
     return ratings_grp  
+
+########################################
+# SAVE_REPORT utils
+# Convert indielabel json to AVID json format.
+# See the AVID format in https://avidml.org/avidtools/reference/report
+#
+# Important mappings:
+#   IndieLabel Attribute        AVID Attribute          Example
+#   text_entry                  description             "I think the Perspective API
+#                                                       is too sensitive. Here are some examples."
+#   topic                       feature                 0_shes_woman_lady_face
+#   persp_score                 model_score             0.94
+#   comment                     ori_input               "She looks beautiful"
+#   user_rating                 personal_model_score    0.92
+#   user_decision               user_decision           "Non-toxic"
+# Note that this is at the individual report level.
+def convert_indie_label_json_to_avid_json(indie_label_json):
+
+    # Setting up the structure with a dict to enable programmatic additions
+    avid_json_dict = { 
+        "data_type": "AVID",
+        "data_version": None,
+        "metadata": None,
+        "affects": {
+            "developer": [],
+            "deployer": [
+              "Hugging Face"
+            ],
+            # TODO: Make artifacts malleable during modularity work
+            "artifacts": [
+              {
+                "type": "Model",
+                "name": "Perspective API"
+              }
+            ]
+        },
+        "problemtype": {
+            "classof": "Undefined", # I don't think any of the other ClassEnums are applicable. Link: https://avidml.org/avidtools/_modules/avidtools/datamodels/enums#ClassEnum
+            "type": "Detection",
+            "description": {
+              "lang": "eng", # TODO: Make language selectable
+              "value": "This report contains results from an end user audit conducted on Hugging Face."
+            }
+          },
+        "metrics": [ # Note: For the end users use case, I made each comment an example.
+          ],
+        "references": [],
+        "description": {
+            "lang": "eng", # TODO: Make language selectable
+            "value": "" # Leaving empty so the report comments can be contained here.
+          },
+          "impact": {
+            "avid": {
+              "risk_domain": [
+                "Ethics"
+              ],
+              "sep_view": [
+                "E0101: Group fairness"
+              ],
+              "lifecycle_view": [
+                "L05: Evaluation"
+              ],
+              "taxonomy_version": "0.2"
+            }
+          },
+          "credit": None,
+          "reported_date": "" # Leaving empty so that it can be dynamically filled in
+    }
+
+    avid_json_dict["description"] = indie_label_json["text_entry"]
+    avid_json_dict["reported_date"] = str(date.today())
+    for e in indie_label_json["evidence"]:
+        curr_metric = {}
+        curr_metric["name"] = "Perspective API"
+        curr_metric["detection_method"] = {
+            "type": "Detection",
+            "name": "Individual Example from End User Audit"
+        }
+        res_dict = {}
+        res_dict["feature"] = e["topic"]
+        res_dict["model_score"] = str(e["persp_score"]) # Converted to string to avoid Float type error with DB
+        res_dict["ori_input"] = e["comment"]
+        res_dict["personal_model_score"] = str(e["user_rating"]) # See above
+        res_dict["user_decision"] = e["user_decision"]
+        curr_metric["results"] = res_dict
+        avid_json_dict["metrics"].append(curr_metric)
+
+    new_report = json.dumps(avid_json_dict)
+    return new_report
 
 ########################################
 # GET_PERSONALIZED_MODEL utils
