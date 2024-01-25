@@ -203,7 +203,7 @@ def get_group_size():
 ########################################
 # ROUTE: /GET_GROUP_MODEL
 @app.route("/get_group_model")
-def get_group_model():
+def get_group_model(debug=DEBUG):
     # Fetch info for initial labeling component
     model_name = request.args.get("model_name")
     user = request.args.get("user")
@@ -236,7 +236,8 @@ def get_group_model():
     mae, mse, rmse, avg_diff, ratings_prev = utils.train_updated_model(model_name, ratings_grp, user)
 
     duration = time.time() - start
-    print("Time to train/cache:", duration)
+    if debug:
+        print("Time to train/cache:", duration)
 
     context = {
         "group_size": group_size,
@@ -360,13 +361,14 @@ def get_personalized_model(debug=DEBUG):
 ########################################
 # ROUTE: /GET_PERSONALIZED_MODEL_TOPIC
 @app.route("/get_personalized_model_topic")
-def get_personalized_model_topic():
+def get_personalized_model_topic(debug=DEBUG):
     model_name = request.args.get("model_name")
     ratings_json = request.args.get("ratings")
     user = request.args.get("user")
     ratings = json.loads(ratings_json)
     topic = request.args.get("topic")
-    print(ratings)
+    if debug:
+        print(ratings)
     start = time.time()
 
     # Modify model name
@@ -375,14 +377,13 @@ def get_personalized_model_topic():
 
     # Handle existing or new model cases
     # Train model and cache predictions using new labels
-    print("get_personalized_model_topic train")
+    if debug:
+        print("get_personalized_model_topic train")
     mae, mse, rmse, avg_diff, ratings_prev = utils.train_updated_model(model_name, ratings, user, topic=topic)
         
-    duration = time.time() - start
-    print("Time to train/cache:", duration) 
-
-    def round_metric(x):
-        return np.round(abs(x), 3)
+    if debug:
+        duration = time.time() - start
+        print("Time to train/cache:", duration) 
 
     results = {
         "success": "success",
@@ -499,8 +500,8 @@ def get_topic_errors(df, topic_vis_method, threshold=2):
     topic_errors = {}
     for topic in topics:
         t_df = df[df["topic"] == topic]
-        y_true = t_df["pred"].to_numpy()
-        y_pred = t_df["rating"].to_numpy()
+        y_true = t_df["pred"].to_numpy()  # Predicted user rating (treated as ground truth)
+        y_pred = t_df["rating_sys"].to_numpy()  # System rating (which we're auditing)
         if topic_vis_method == "mae":
             t_err = mean_absolute_error(y_true, y_pred)
         elif topic_vis_method == "mse":
@@ -508,8 +509,8 @@ def get_topic_errors(df, topic_vis_method, threshold=2):
         elif topic_vis_method == "avg_diff":
             t_err = np.mean(y_true - y_pred)
         elif topic_vis_method == "fp_proportion":
-            y_true = [0 if rating < threshold else 1 for rating in t_df["pred"].tolist()]
-            y_pred = [0 if rating < threshold else 1 for rating in t_df["rating"].tolist()]
+            y_true = [0 if rating < threshold else 1 for rating in y_true]
+            y_pred = [0 if rating < threshold else 1 for rating in y_pred]
             try:
                 tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
             except:
@@ -517,8 +518,8 @@ def get_topic_errors(df, topic_vis_method, threshold=2):
             total = float(len(y_true))
             t_err = fp / total
         elif topic_vis_method == "fn_proportion":
-            y_true = [0 if rating < threshold else 1 for rating in t_df["pred"].tolist()]
-            y_pred = [0 if rating < threshold else 1 for rating in t_df["rating"].tolist()]
+            y_true = [0 if rating < threshold else 1 for rating in y_true]
+            y_pred = [0 if rating < threshold else 1 for rating in y_pred]
             try:
                 tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
             except:
@@ -529,16 +530,14 @@ def get_topic_errors(df, topic_vis_method, threshold=2):
         
     return topic_errors
 
-def get_personal_scaffold(cur_user, model, topic_vis_method, n_topics=200, n=5):
+def get_personal_scaffold(cur_user, model, topic_vis_method, n_topics=200, n=5, debug=DEBUG):
     threshold = utils.get_toxic_threshold()
 
     # Get topics with greatest amount of error
     preds_file = utils.get_preds_file(cur_user, model)
     with open(preds_file, "rb") as f:
         preds_df = pickle.load(f)
-        system_preds_df = utils.get_system_preds_df()
-        preds_df_mod = preds_df.merge(system_preds_df, on="item_id", how="left", suffixes=('', '_sys'))
-        preds_df_mod = preds_df_mod[preds_df_mod["user_id"] == cur_user].sort_values(by=["item_id"]).reset_index()
+        preds_df_mod = preds_df[preds_df["user_id"] == cur_user].sort_values(by=["item_id"]).reset_index()
         preds_df_mod = preds_df_mod[preds_df_mod["topic_id"] < n_topics]
 
         if topic_vis_method == "median":
@@ -557,11 +556,12 @@ def get_personal_scaffold(cur_user, model, topic_vis_method, n_topics=200, n=5):
             df = preds_df_mod.groupby(["topic", "user_id"]).mean().reset_index()
 
         # Get system error
-        df = df[(df["topic"] != "53_maiareficco_kallystas_dyisisitmanila_tractorsazi") & (df["topic"] != "79_idiot_dumb_stupid_dumber")]
+        junk_topics = ["53_maiareficco_kallystas_dyisisitmanila_tractorsazi", "-1_dude_bullshit_fight_ain"]
+        df = df[~df["topic"].isin(junk_topics)]  # Exclude known "junk topics"
         
         if topic_vis_method == "median" or topic_vis_method == "mean":
-            df["error_magnitude"] = [utils.get_error_magnitude(sys, user, threshold) for sys, user in zip(df["rating"].tolist(), df["pred"].tolist())]
-            df["error_type"] = [utils.get_error_type_radio(sys, user, threshold) for sys, user in zip(df["rating"].tolist(), df["pred"].tolist())]
+            df["error_magnitude"] = [utils.get_error_magnitude(sys, user, threshold) for sys, user in zip(df["rating_sys"].tolist(), df["pred"].tolist())]
+            df["error_type"] = [utils.get_error_type_radio(sys, user, threshold) for sys, user in zip(df["rating_sys"].tolist(), df["pred"].tolist())]
 
             df_under = df[df["error_type"] == "System is under-sensitive"]
             df_under = df_under.sort_values(by=["error_magnitude"], ascending=False).head(n) # surface largest errors first
@@ -577,17 +577,21 @@ def get_personal_scaffold(cur_user, model, topic_vis_method, n_topics=200, n=5):
         elif topic_vis_method == "fp_fn":
             df_under = df.sort_values(by=["fn_proportion"], ascending=False).head(n)
             df_under = df_under[df_under["fn_proportion"] > 0]
+            if debug:
+                print(df_under[["topic", "fn_proportion"]])
             report_under = [get_empty_report(row["topic"], "System is under-sensitive") for _, row in df_under.iterrows()]
             
             df_over = df.sort_values(by=["fp_proportion"], ascending=False).head(n)
             df_over = df_over[df_over["fp_proportion"] > 0]
+            if debug:
+                print(df_over[["topic", "fp_proportion"]])
             report_over = [get_empty_report(row["topic"], "System is over-sensitive") for _, row in df_over.iterrows()]
 
             reports = (report_under + report_over)
             random.shuffle(reports)
         else:
             df = df.sort_values(by=[topic_vis_method], ascending=False).head(n * 2)
-            df["error_type"] = [utils.get_error_type_radio(sys, user, threshold) for sys, user in zip(df["rating"].tolist(), df["pred"].tolist())]
+            df["error_type"] = [utils.get_error_type_radio(sys, user, threshold) for sys, user in zip(df["rating_sys"].tolist(), df["pred"].tolist())]
             reports = [get_empty_report(row["topic"], row["error_type"]) for _, row in df.iterrows()]
 
         return reports

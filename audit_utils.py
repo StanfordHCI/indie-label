@@ -115,8 +115,6 @@ readable_to_internal = {
 }
 internal_to_readable = {v: k for k, v in readable_to_internal.items()}
 
-def get_system_preds_df():
-    return system_preds_df
 
 ########################################
 # Data storage helper functions
@@ -455,7 +453,7 @@ def get_predictions_by_user_and_item(predictions):
 # - model: trained model
 # - user_ids: list of user IDs to compute predictions for
 # - sys_eval_df: dataframe of system eval labels (pre-computed)
-def get_preds_df(model, user_ids, sys_eval_df=sys_eval_df, bins=BINS):
+def get_preds_df(model, user_ids, sys_eval_df=sys_eval_df, bins=BINS, debug=False):
     # Prep dataframe for all predictions we'd like to request
     start = time.time()
     sys_eval_comment_ids = sys_eval_df.item_id.unique().tolist()
@@ -464,7 +462,8 @@ def get_preds_df(model, user_ids, sys_eval_df=sys_eval_df, bins=BINS):
     for user_id in user_ids:
         empty_ratings_rows.extend([[user_id, c_id, 0] for c_id in sys_eval_comment_ids])
     empty_ratings_df = pd.DataFrame(empty_ratings_rows, columns=["user_id", "item_id", "rating"])
-    print("setup", time.time() - start)
+    if debug:
+        print("setup", time.time() - start)
     
     # Evaluate model to get predictions
     start = time.time() 
@@ -472,7 +471,8 @@ def get_preds_df(model, user_ids, sys_eval_df=sys_eval_df, bins=BINS):
     eval_set_data = Dataset.load_from_df(empty_ratings_df, reader)
     _, testset = train_test_split(eval_set_data, test_size=1.)
     predictions = model.test(testset)
-    print("train_test_split", time.time() - start)
+    if debug:
+        print("train_test_split", time.time() - start)
     
     # Update dataframe with predictions
     start = time.time()
@@ -513,7 +513,7 @@ def train_user_model(ratings_df, train_df=train_df, model_eval_df=model_eval_df,
 # - train_df: dataframe of training labels
 # - model_eval_df: dataframe of model eval labels (validation set)
 # - model_type: type of model to train
-def train_model(train_df, model_eval_df, model_type="SVD", sim_type=None, user_based=True):
+def train_model(train_df, model_eval_df, model_type="SVD", sim_type=None, user_based=True, debug=False):
     # Train model
     reader = Reader(rating_scale=(0, 4))
     train_data = Dataset.load_from_df(train_df, reader)
@@ -542,7 +542,8 @@ def train_model(train_df, model_eval_df, model_type="SVD", sim_type=None, user_b
     mae = accuracy.mae(predictions)
     mse = accuracy.mse(predictions)
     
-    print(f"MAE: {mae}, MSE: {mse}, RMSE: {rmse}, FCP: {fcp}")
+    if debug:
+        print(f"MAE: {mae}, MSE: {mse}, RMSE: {rmse}, FCP: {fcp}")
     perf = [mae, mse, rmse, fcp]
     
     return algo, perf
@@ -1038,7 +1039,7 @@ def plot_overall_vis_cluster(cur_user, preds_df, error_type, n_comments=None, bi
 
     return final_plot, df
 
-def get_cluster_comments(df, error_type, threshold=TOXIC_THRESHOLD, sys_col="rating_sys", use_model=True):    
+def get_cluster_comments(df, error_type, threshold=TOXIC_THRESHOLD, sys_col="rating_sys", use_model=True, debug=False):    
     df["user_color"] = [get_user_color(user, threshold) for user in df["pred"].tolist()]  # get cell colors
     df["system_color"] = [get_user_color(sys, threshold) for sys in df[sys_col].tolist()]  # get cell colors
     df["error_color"] = [get_system_color(sys, user, threshold) for sys, user in zip(df[sys_col].tolist(), df["pred"].tolist())]  # get cell colors
@@ -1049,7 +1050,8 @@ def get_cluster_comments(df, error_type, threshold=TOXIC_THRESHOLD, sys_col="rat
     if use_model:
         df = df.sort_values(by=["error_amt"], ascending=False) # surface largest errors first
     else:
-        print("get_cluster_comments; not using model")
+        if debug:
+            print("get_cluster_comments; not using model")
         df = df.sort_values(by=[sys_col], ascending=True)
 
     df["id"] = df["item_id"]

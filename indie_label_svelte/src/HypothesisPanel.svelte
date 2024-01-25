@@ -35,13 +35,10 @@
     // Handle routing
     let searchParams = new URLSearchParams(window.location.search);
     let scaffold_method = searchParams.get("scaffold");
+    if (scaffold_method == null) {
+        scaffold_method = "personal"; // Default to personalized model scaffold
+    }
     let topic_vis_method = searchParams.get("topic_vis_method");
-
-    // TODO: connect to selected["error_type"] so changes on main panel affect report panel
-    // let cur_error_type;
-    // error_type.subscribe(value => {
-	// 	cur_error_type = value;
-	// });
 
     // Handle drawer
     let open = false;

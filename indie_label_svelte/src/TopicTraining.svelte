@@ -75,7 +75,6 @@
             topic: topic,
         };
 
-        console.log("topic training model name", model_name);
         let params = new URLSearchParams(req_params).toString();
         const response = await fetch("./get_personalized_model_topic?" + params); // TODO
         const text = await response.text();
@@ -84,7 +83,6 @@
         model_name = data["new_model_name"];
         model_chosen.update((value) => model_name);
 
-        console.log("topicTraining", data);
         return data;
     }
 </script>

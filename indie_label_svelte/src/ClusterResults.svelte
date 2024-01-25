@@ -55,12 +55,10 @@
     //your code goes here on location change 
         let cur_url = window.location.href;
         let cur_url_elems = cur_url.split("#");
-        // console.log(cur_url_elems)
         if (cur_url_elems.length > 0) {
             let path = cur_url_elems[2];
             if (path == "comment") {
                 let comment_id = cur_url_elems[1].split("/")[0];
-                console.log("comment_id", comment_id)
                 selected_comment_id = parseInt(comment_id);
                 let table_ind = null;
                 for (let i = 0; i < items.length; i++) {
@@ -130,7 +128,6 @@
         items = data["cluster_comments"];
         set_length = items.length;
     }
-    // console.log(set_length);
     
     let cur_open_evidence;
     open_evidence.subscribe(value => {

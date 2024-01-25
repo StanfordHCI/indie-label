@@ -93,7 +93,6 @@
         const response = await fetch("./get_group_model?" + params);
         const text = await response.text();
         const data = JSON.parse(text);
-        console.log("getGroupModel", data);
         return data
     }
 

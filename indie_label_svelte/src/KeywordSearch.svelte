@@ -36,7 +36,6 @@
             keyword: keyword,
             error_type: cur_error_type,
         };
-        console.log("topic_df_ids", topic_df_ids);
         let params = new URLSearchParams(req_params).toString();
         const response = await fetch("./get_cluster_results?" + params);
         const text = await response.text();

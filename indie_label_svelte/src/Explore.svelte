@@ -48,7 +48,6 @@
         const text = await response.text();
         const data = JSON.parse(text);
         cur_examples = JSON.parse(data["examples"]);
-        console.log(cur_examples); // TEMP
         return true;
     }
 </script>
