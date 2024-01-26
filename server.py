@@ -21,6 +21,9 @@ import friendlywords as fw
 
 import audit_utils as utils
 
+import requests
+
+
 app = Flask(__name__)
 DEBUG = False  # Debug flag for development; set to False for production
 
@@ -635,6 +638,21 @@ def get_prompts_scaffold():
         },
     ]
 
+# Submit all reports to AVID
+# Logs the responses
+def submit_reports_to_AVID(reports):
+    #Set up the connection to AVID
+    root = environ.get('AVID_API_URL')
+    api_key = environ.get('AVID_API_KEY')
+    key = {"Authorization": api_key}
+
+    for r in reports:
+        new_report = utils.convert_indie_label_json_to_avid_json(r)
+        url = root + "submit"
+        response = requests.post(url, json=json.loads(new_report), headers=key) # The loads ensures type compliance
+        uuid = response.json()
+        print("AVID API response:", response, uuid)
+
 ########################################
 # ROUTE: /SAVE_REPORTS
 @app.route("/save_reports")
@@ -645,6 +663,9 @@ def save_reports():
     scaffold_method = request.args.get("scaffold_method")
     model = request.args.get("model")
 
+    # Submit reports to AVID
+    submit_reports_to_AVID(reports)
+
     # Save reports for current user to file
     reports_file = utils.get_reports_file(cur_user, model)
     with open(reports_file, "w", encoding ='utf8') as f:
@@ -653,6 +674,7 @@ def save_reports():
     results = {
         "status": "success",
     }
+    print(results)
     return json.dumps(results)
 
 ########################################
