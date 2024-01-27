@@ -1,5 +1,5 @@
 __pycache__/
 .DS_Store
 data/
-data.zip
 test_nbs/
+data_zips/
