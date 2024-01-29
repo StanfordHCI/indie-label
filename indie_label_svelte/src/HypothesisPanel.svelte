@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import ClusterResults from "./ClusterResults.svelte";
+    import SubmitReportDialog from "./SubmitReportDialog.svelte";
 
     import Button, { Label } from "@smui/button";
     import Textfield from '@smui/textfield';
@@ -31,6 +32,8 @@
     topic_chosen.subscribe(value => {
 		cur_topic = value;
 	});
+    // Handle submit report dialog
+	let submit_dialog_open = false;
 
     // Handle routing
     let searchParams = new URLSearchParams(window.location.search);
@@ -202,333 +205,309 @@
     // Save current error type
     async function updateErrorType() {    
         // Update error type on main page to be the selected error type
-		// error_type.update((value) => cur_error_type);
-        // selected["error_type"] = cur_error_type;
         editErrorType = false;
 	}
 
+    let promise_submit = Promise.resolve(null);
+    function handleSubmitReport() {
+        promise_submit = submitReport();
+    }
+    async function submitReport() {
+        submit_dialog_open = true;
+        return true;
+    }
+
 </script>
 
-<div class="hypothesis_panel">
-    <div class="panel_header">
-        <div class="panel_header_content">
-            <div class="page_header">
-                <img src="/logo.png" style="height: 50px; padding: 0px 20px;" alt="IndieLabel" />
-                <Button class="user_button" color="secondary" style="margin: 12px 10px;" >
-                    <Label>User: {cur_user}</Label>
-                </Button>
-            </div>
-            <div class="hypotheses_header">
-                <h5 style="float: left; margin: 0; padding: 5px 20px;">Your Audit Reports</h5>
-                <Button 
-                    on:click={() => (open = !open)}
-                    color="primary"
-                    disabled={model == null}
-                    style="float: right; padding: 10px; margin-right: 10px;"
-                >
-                    {#if open}
-                    <Label>Close</Label>
-                    {:else}
-                        {#key unfinished_count}
-                        <Label>Unfinished reports ({unfinished_count})</Label>
-                        {/key}
-                    {/if}
-                </Button>
+<div>
+    {#await promise_submit}
+        <CircularProgress style="height: 32px; width: 32px;" indeterminate />
+    {:then}
+        <SubmitReportDialog bind:open={submit_dialog_open} cur_user={cur_user} all_reports={all_reports}/>
+    {:catch error}
+        <p style="color: red">{error.message}</p>
+    {/await}
+    <div class="hypothesis_panel">
+        <div class="panel_header">
+            <div class="panel_header_content">
+                <div class="page_header">
+                    <img src="/logo.png" style="height: 50px; padding: 0px 20px;" alt="IndieLabel" />
+                    <Button class="user_button" color="secondary" style="margin: 12px 10px;" >
+                        <Label>User: {cur_user}</Label>
+                    </Button>
+                </div>
+                <div class="hypotheses_header">
+                    <h5 style="float: left; margin: 0; padding: 5px 20px;">Your Audit Reports</h5>
+                    <Button 
+                        on:click={() => (open = !open)}
+                        color="primary"
+                        disabled={model == null}
+                        style="float: right; padding: 10px; margin-right: 10px;"
+                    >
+                        {#if open}
+                        <Label>Close</Label>
+                        {:else}
+                            {#key unfinished_count}
+                            <Label>Unfinished reports ({unfinished_count})</Label>
+                            {/key}
+                        {/if}
+                    </Button>
+                </div>
             </div>
         </div>
-    </div>
 
-    {#if model == null}
-    <div class="panel_contents">
-        <p>You can start to author audit reports in this panel after you've trained your personalized model in the "Labeling" tab.</p>
-    </div>
-    {:else}
-    <div class="panel_contents">  
-        <!-- Drawer -->
-        {#await promise}
-            <div class="app_loading_fullwidth">
-                <LinearProgress indeterminate />
-            </div>
-        {:then reports}
-            {#if reports}
-            <div class="drawer-container">
-                {#key open}
-                <Drawer variant="dismissible" bind:open>
-                    <Header>
-                        <Title>Your Reports</Title>
-                        <Subtitle>Select a report to view.</Subtitle>
-                    </Header>
-                    <Content>
-                        <List twoLine>
-                            {#each reports as report}
-                                <Item
-                                    href="javascript:void(0)"
-                                    on:click={() => setActive(report)}
-                                    activated={selected === report}
-                                >   
-                                    {#if report["complete_status"]}
-                                    <Graphic class="material-icons" aria-hidden="true">task_alt</Graphic>
-                                    {:else}
-                                    <Graphic class="material-icons" aria-hidden="true">radio_button_unchecked</Graphic>
-                                    {/if}
-                                    <Text>
-                                        <PrimaryText>
-                                            {report["title"]}
-                                        </PrimaryText>
-                                        <SecondaryText>
-                                            {report["error_type"]}
-                                        </SecondaryText>
-                                    </Text>
-                                </Item>
-                            {/each}
-                        </List>
-                    </Content>
-                </Drawer>
-                {/key}
-                <AppContent class="app-content">
-                    <main class="main-content">
-                        {#if selected}
-                        <div class="head_6_highlight">
-                            Current Report
-                        </div>
-                        <div class="panel_contents2">
-                            <!-- Title -->
-                            <div class="spacing_vert">
-                                <div class="edit_button_row">
-                                    {#if editTitle}
-                                        <div class="edit_button_row_input">
-                                            <Textfield
-                                                bind:value={selected["title"]}
-                                                label="Your report title"
-                                                input$rows={4}
-                                                textarea
-                                                variant="outlined"
-                                                style="width: 100%;"
-                                                helperLine$style="width: 100%;"
-                                            />
-                                        </div>
-                                        <div>
-                                            <IconButton class="material-icons grey_button" size="button" on:click={() => (editTitle = false)}>
-                                                check
-                                            </IconButton>
-                                        </div>
-                                    {:else}
-                                        {#if selected["title"] != ""}
-                                            <div class="head_5">
-                                                {selected["title"]}
+        {#if model == null}
+        <div class="panel_contents">
+            <p>You can start to author audit reports in this panel after you've trained your personalized model in the "Labeling" tab.</p>
+        </div>
+        {:else}
+        <div class="panel_contents">  
+            <!-- Drawer -->
+            {#await promise}
+                <div class="app_loading_fullwidth">
+                    <LinearProgress indeterminate />
+                </div>
+            {:then reports}
+                {#if reports}
+                <div class="drawer-container">
+                    {#key open}
+                    <Drawer variant="dismissible" bind:open>
+                        <Header>
+                            <Title>Your Reports</Title>
+                            <Subtitle>Select a report to view.</Subtitle>
+                        </Header>
+                        <Content>
+                            <List twoLine>
+                                {#each reports as report}
+                                    <Item
+                                        href="javascript:void(0)"
+                                        on:click={() => setActive(report)}
+                                        activated={selected === report}
+                                    >   
+                                        {#if report["complete_status"]}
+                                        <Graphic class="material-icons" aria-hidden="true">task_alt</Graphic>
+                                        {:else}
+                                        <Graphic class="material-icons" aria-hidden="true">radio_button_unchecked</Graphic>
+                                        {/if}
+                                        <Text>
+                                            <PrimaryText>
+                                                {report["title"]}
+                                            </PrimaryText>
+                                            <SecondaryText>
+                                                {report["error_type"]}
+                                            </SecondaryText>
+                                        </Text>
+                                    </Item>
+                                {/each}
+                            </List>
+                        </Content>
+                    </Drawer>
+                    {/key}
+                    <AppContent class="app-content">
+                        <main class="main-content">
+                            {#if selected}
+                            <div class="head_6_highlight">
+                                Current Report
+                            </div>
+                            <div class="panel_contents2">
+                                <!-- Title -->
+                                <div class="spacing_vert">
+                                    <div class="edit_button_row">
+                                        {#if editTitle}
+                                            <div class="edit_button_row_input">
+                                                <Textfield
+                                                    bind:value={selected["title"]}
+                                                    label="Your report title"
+                                                    input$rows={4}
+                                                    textarea
+                                                    variant="outlined"
+                                                    style="width: 100%;"
+                                                    helperLine$style="width: 100%;"
+                                                />
+                                            </div>
+                                            <div>
+                                                <IconButton class="material-icons grey_button" size="button" on:click={() => (editTitle = false)}>
+                                                    check
+                                                </IconButton>
                                             </div>
                                         {:else}
-                                            <div class="grey_text">Enter a report title</div>
+                                            {#if selected["title"] != ""}
+                                                <div class="head_5">
+                                                    {selected["title"]}
+                                                </div>
+                                            {:else}
+                                                <div class="grey_text">Enter a report title</div>
+                                            {/if}
+
+                                            <div>
+                                                <IconButton class="material-icons grey_button" size="button" on:click={() => (editTitle = true)}>
+                                                    create
+                                                </IconButton>
+                                            </div>
                                         {/if}
-
-                                        <div>
-                                            <IconButton class="material-icons grey_button" size="button" on:click={() => (editTitle = true)}>
-                                                create
-                                            </IconButton>
-                                        </div>
-                                    {/if}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Error type -->
-                            <div class="spacing_vert_40">
-                                <div class="head_6">
-                                    <b>Error Type</b> 
-                                </div>
-                                <div class="edit_button_row">
-                                    {#if editErrorType}
-                                        <div>
-                                            {#each error_type_options as e}
-                                                <div style="display: flex; align-items: center;">
-                                                    <!-- <Wrapper rich>
+                                <!-- Error type -->
+                                <div class="spacing_vert_40">
+                                    <div class="head_6">
+                                        <b>Error Type</b> 
+                                    </div>
+                                    <div class="edit_button_row">
+                                        {#if editErrorType}
+                                            <div>
+                                                {#each error_type_options as e}
+                                                    <div style="display: flex; align-items: center;">
                                                         <FormField>
                                                             <Radio bind:group={selected["error_type"]} value={e.opt} on:change={updateErrorType} color="secondary" />
                                                             <span slot="label">
-                                                                {e.opt}
-                                                                <IconButton class="material-icons" size="button" disabled>help_outline</IconButton>
+                                                                <b>{e.opt}</b> {e.descr}
                                                             </span>
                                                         </FormField>
-                                                        <HelpTooltip text={e.help} />
-                                                    </Wrapper> -->
-
-                                                    <FormField>
-                                                        <Radio bind:group={selected["error_type"]} value={e.opt} on:change={updateErrorType} color="secondary" />
-                                                        <span slot="label">
-                                                            <b>{e.opt}</b> {e.descr}
-                                                        </span>
-                                                    </FormField>
-                                                </div>
-                                            {/each}
-                                        </div>
-                                        <!-- <div>
-                                            <IconButton class="material-icons grey_button" size="button" on:click={() => (editErrorType = false)}>
-                                                check
-                                            </IconButton>
-                                        </div> -->
-                                    {:else}
-                                        {#if selected["error_type"] != ""}
-                                            <div>
-                                                <p>{selected["error_type"]}</p>
+                                                    </div>
+                                                {/each}
                                             </div>
                                         {:else}
-                                            <div class="grey_text">Select an error type</div>
+                                            {#if selected["error_type"] != ""}
+                                                <div>
+                                                    <p>{selected["error_type"]}</p>
+                                                </div>
+                                            {:else}
+                                                <div class="grey_text">Select an error type</div>
+                                            {/if}
+                                            
+                                            <div>
+                                                <IconButton class="material-icons grey_button" size="button" on:click={() => (editErrorType = true)}>
+                                                    create
+                                                </IconButton>
+                                            </div>
                                         {/if}
-                                        
-                                        <div>
-                                            <IconButton class="material-icons grey_button" size="button" on:click={() => (editErrorType = true)}>
-                                                create
-                                            </IconButton>
-                                        </div>
-                                    {/if}
-                                </div>
-                            </div>
-                            
-                            <!-- Evidence -->
-                            <div class="spacing_vert_40">
-                                <div class="head_6">
-                                    <b>Evidence</b>
-                                </div>
-                                {#key cur_open_evidence}
-                                <div>
-                                    {#if cur_open_evidence.length > 0}
-                                    <ClusterResults 
-                                        cluster={cur_topic} 
-                                        model={model} 
-                                        data={{"cluster_comments": cur_open_evidence}} 
-                                        show_vis={false} 
-                                        show_checkboxes={false} 
-                                        table_width_pct={100} 
-                                        rowsPerPage={25} 
-                                        table_id={"panel"}
-                                    />
-                                    {:else}
-                                        <p class="grey_text">
-                                            Add examples from the main panel to see them here!
-                                        </p>
-                                    {/if}
-                                </div>
-                                {/key}
-                            </div>
-
-                            <div class="spacing_vert_60">
-                                <div class="head_6">
-                                    <b>Summary/Suggestions</b>
-                                </div>
-                                <div class="spacing_vert">
-                                    <Textfield
-                                        style="width: 100%;"
-                                        helperLine$style="width: 100%;"
-                                        input$rows={8}
-                                        textarea
-                                        bind:value={selected["text_entry"]}
-                                        label="My current hunch is that..."
-                                    >
-                                    </Textfield>
+                                    </div>
                                 </div>
                                 
-                            </div>
-
-                            <div class="spacing_vert_40">
-                                <div class="head_6">
-                                    <b>Mark report as complete?</b>
-                                    <FormField>
-                                        <Checkbox checked={selected["complete_status"]} on:change={handleMarkComplete} />
-                                    </FormField>
+                                <!-- Evidence -->
+                                <div class="spacing_vert_40">
+                                    <div class="head_6">
+                                        <b>Evidence</b>
+                                    </div>
+                                    {#key cur_open_evidence}
+                                    <div>
+                                        {#if cur_open_evidence.length > 0}
+                                        <ClusterResults 
+                                            cluster={cur_topic} 
+                                            model={model} 
+                                            data={{"cluster_comments": cur_open_evidence}} 
+                                            show_vis={false} 
+                                            show_checkboxes={false} 
+                                            table_width_pct={100} 
+                                            rowsPerPage={25} 
+                                            table_id={"panel"}
+                                        />
+                                        {:else}
+                                            <p class="grey_text">
+                                                Add examples from the main panel to see them here!
+                                            </p>
+                                        {/if}
+                                    </div>
+                                    {/key}
                                 </div>
-                                
+
+                                <div class="spacing_vert_60">
+                                    <div class="head_6">
+                                        <b>Summary/Suggestions</b>
+                                    </div>
+                                    <div class="spacing_vert">
+                                        <Textfield
+                                            style="width: 100%;"
+                                            helperLine$style="width: 100%;"
+                                            input$rows={8}
+                                            textarea
+                                            bind:value={selected["text_entry"]}
+                                            label="My current hunch is that..."
+                                        >
+                                        </Textfield>
+                                    </div>
+                                    
+                                </div>
+
+                                <div class="spacing_vert_40">
+                                    <div class="head_6">
+                                        <b>Mark report as complete?</b>
+                                        <FormField>
+                                            <Checkbox checked={selected["complete_status"]} on:change={handleMarkComplete} />
+                                        </FormField>
+                                    </div>
+                                    
+                                </div>
                             </div>
-                        </div>
+                            {/if}
+                        </main>
+                    </AppContent>
+                </div>
+                {/if}
+            {:catch error}
+                <p style="color: red">{error.message}</p>
+            {/await}
+        </div>
+
+        <div class="panel_footer">
+            <div class="panel_footer_contents">
+                <Button 
+                    on:click={handleNewReport} 
+                    variant="outlined" 
+                    color="secondary"
+                    style=""
+                >
+                    <Label>New</Label>
+                </Button>
+
+                <!-- <Button 
+                    on:click={handleDeleteReport} 
+                    variant="outlined" 
+                    color="secondary"
+                    style=""
+                >
+                    <Label>Delete</Label>
+                </Button> -->
+
+                <Button 
+                    on:click={handleSaveReport} 
+                    variant="outlined" 
+                    color="secondary"
+                >
+                    <Label>Save</Label>
+                </Button>
+
+                <Button 
+                    on:click={handleSubmitReport} 
+                    variant="outlined"
+                    color="secondary"
+                >
+                    <Label>Send Reports</Label>
+                </Button>
+
+                <div>
+                    <span style="color: grey"><i>Last saved:
+                    {#await promise_save}
+                        <CircularProgress style="height: 32px; width: 32px;" indeterminate />
+                    {:then result}
+                        {#if result}
+                        {new Date().toLocaleTimeString()}
+                        {:else}
+                        —
                         {/if}
-                    </main>
-                </AppContent>
-            </div>
-            {/if}
-        {:catch error}
-            <p style="color: red">{error.message}</p>
-        {/await}
-    </div>
-
-    <div class="panel_footer">
-        <div class="panel_footer_contents">
-            
-
-            <Button 
-                on:click={handleNewReport} 
-                variant="outlined" 
-                color="secondary"
-                style=""
-            >
-                <Label>New</Label>
-            </Button>
-
-            <Button 
-                on:click={handleDeleteReport} 
-                variant="outlined" 
-                color="secondary"
-                style=""
-            >
-                <Label>Delete</Label>
-            </Button>
-
-            <Button 
-                on:click={handleSaveReport} 
-                variant="outlined" 
-                color="secondary"
-            >
-                <Label>Save</Label>
-            </Button>
-
-            <div>
-                <span style="color: grey"><i>Last saved:
-                {#await promise_save}
-                    <CircularProgress style="height: 32px; width: 32px;" indeterminate />
-                {:then result}
-                    {#if result}
-                     {new Date().toLocaleTimeString()}
-                    {:else}
-                     —
-                    {/if}
-                {:catch error}
-                    <p style="color: red">{error.message}</p>
-                {/await}
-                </i></span>
+                    {:catch error}
+                        <p style="color: red">{error.message}</p>
+                    {/await}
+                    </i></span>
+                </div>
             </div>
         </div>
+        {/if}
     </div>
-    {/if}
-    <!-- TEMP -->
-    <!-- {#key model}
-        <div>Model: {model}</div> 
-    {/key} -->
 </div>
 
 <style>
-    /* Drawer */
-    /* .drawer-container {
-        position: relative;
-        display: flex;
-        height: 350px;
-        max-width: 600px;
-        border: 1px solid
-        var(--mdc-theme-text-hint-on-background, rgba(0, 0, 0, 0.1));
-        overflow: hidden;
-        z-index: 0;
-    }
-    
-    * :global(.app-content) {
-        flex: auto;
-        overflow: auto;
-        position: relative;
-        flex-grow: 1;
-    }
-    
-    .main-content {
-        overflow: auto;
-        padding: 16px;
-        height: 100%;
-        box-sizing: border-box;
-    } */
-
     .panel_contents {
         padding: 0 20px;
         overflow-y: auto;

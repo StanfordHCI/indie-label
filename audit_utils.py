@@ -317,6 +317,25 @@ def get_grp_model_labels(n_label_per_bin, score_bins, grp_ids):
 
 ########################################
 # SAVE_REPORT utils
+
+# Convert the SEP field selection from the UI to the SEP enum value
+def get_sep_enum(sep_selection):
+    if sep_selection == "Adversarial Example":
+        return "S0403: Adversarial Example"
+    elif sep_selection == "Accuracy":
+        return "P0204: Accuracy"
+    elif sep_selection == "Bias/Discrimination":
+        return "E0100: Bias/ Discrimination"
+    else:
+        return "P0200: Model issues"
+
+# Format the description for the report including the provided title, error type, and text entry field ("Summary/Suggestions" text box)
+def format_description(indie_label_json):
+    title = indie_label_json["title"]
+    error_type = indie_label_json["error_type"]
+    text_entry = indie_label_json["text_entry"]
+    return f"Title: {title}\nError Type: {error_type}\nSummary/Suggestions: {text_entry}"
+
 # Convert indielabel json to AVID json format.
 # See the AVID format in https://avidml.org/avidtools/reference/report
 #
@@ -330,7 +349,7 @@ def get_grp_model_labels(n_label_per_bin, score_bins, grp_ids):
 #   user_rating                 personal_model_score    0.92
 #   user_decision               user_decision           "Non-toxic"
 # Note that this is at the individual report level.
-def convert_indie_label_json_to_avid_json(indie_label_json):
+def convert_indie_label_json_to_avid_json(indie_label_json, cur_user, email, sep_selection):
 
     # Setting up the structure with a dict to enable programmatic additions
     avid_json_dict = { 
@@ -379,12 +398,21 @@ def convert_indie_label_json_to_avid_json(indie_label_json):
               "taxonomy_version": "0.2"
             }
           },
-          "credit": None,
+          "credit": "", # Leaving empty so that credit can be assigned
           "reported_date": "" # Leaving empty so that it can be dynamically filled in
     }
 
-    avid_json_dict["description"] = indie_label_json["text_entry"]
+    avid_json_dict["description"] = format_description(indie_label_json)
     avid_json_dict["reported_date"] = str(date.today())
+    # Assign credit to email if provided, otherwise default to randomly assigned username
+    if email != "":
+        avid_json_dict["credit"] = email
+    else:
+        avid_json_dict["credit"] = cur_user
+
+    sep_enum = get_sep_enum(sep_selection)
+    avid_json_dict["impact"]["avid"]["sep_view"] = [sep_enum]
+
     for e in indie_label_json["evidence"]:
         curr_metric = {}
         curr_metric["name"] = "Perspective API"
