@@ -5,6 +5,7 @@
 
     import Button, { Label } from "@smui/button";
     import Textfield from '@smui/textfield';
+    import Select, { Option } from "@smui/select";
     import { new_evidence } from './stores/new_evidence_store.js';
     import { open_evidence } from './stores/open_evidence_store.js';
     import { topic_chosen } from './stores/cur_topic_store.js';
@@ -50,6 +51,7 @@
     let editTitle = false;
     let editErrorType = false;
     let unfinished_count = 0;
+    let has_complete_report = false;
     
     function setActive(value: string) {
         selected = value;
@@ -91,6 +93,7 @@
         setActive(selected);
         cur_open_evidence = selected["evidence"];
         unfinished_count = all_reports.filter(item => !item.complete_status).length
+        has_complete_report = hasCompleteReport();
         return all_reports;
     }
 
@@ -143,6 +146,8 @@
         const response = await fetch("./save_reports?" + params);
         const text = await response.text();
         const data = JSON.parse(text);
+        
+        has_complete_report = hasCompleteReport();
         return data;
     }
 
@@ -152,6 +157,7 @@
             error_type: "",
             evidence: [],
             text_entry: "",
+            sep_selection: "",
             complete_status: false,
         };
         all_reports = all_reports.concat(new_report);
@@ -176,6 +182,10 @@
         selected["complete_status"] = !selected["complete_status"];
         unfinished_count = all_reports.filter(item => !item.complete_status).length
         handleSaveReport(); // Auto-save report
+    }
+
+    function hasCompleteReport() {
+        return all_reports.some(item => item.complete_status && (item.evidence.length > 0) && (item.text_entry != "") && (item.sep_selection));
     }
 
     // Error type
@@ -207,6 +217,14 @@
         // Update error type on main page to be the selected error type
         editErrorType = false;
 	}
+
+    // SEP selection
+    let all_sep_options = [
+        "Accuracy",
+        "Bias/Discrimination",
+        "Adversarial Example",
+        "Other",
+    ];
 
     let promise_submit = Promise.resolve(null);
     function handleSubmitReport() {
@@ -412,7 +430,7 @@
                                     {/key}
                                 </div>
 
-                                <div class="spacing_vert_60">
+                                <div class="spacing_vert_40">
                                     <div class="head_6">
                                         <b>Summary/Suggestions</b>
                                     </div>
@@ -432,10 +450,25 @@
 
                                 <div class="spacing_vert_40">
                                     <div class="head_6">
-                                        <b>Mark report as complete?</b>
+                                        <b>Audit Category</b>
+                                    </div>
+                                    <div>
+                                        <Select bind:value={selected["sep_selection"]} label="Audit category" style="width: 90%">
+                                            {#each all_sep_options as opt}
+                                                <Option value={opt}>{opt}</Option>
+                                            {/each}
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div class="spacing_vert_100_bottom">
+                                    <div>
+                                        <span class="head_6"><b>Mark report as complete?</b></span>
                                         <FormField>
                                             <Checkbox checked={selected["complete_status"]} on:change={handleMarkComplete} />
                                         </FormField>
+                                        <br>
+                                        <p>Reports must be marked as complete and include all fields before they can be sent to AVID below.</p>
                                     </div>
                                     
                                 </div>
@@ -478,13 +511,17 @@
                     <Label>Save</Label>
                 </Button>
 
+                {#key has_complete_report}
                 <Button 
                     on:click={handleSubmitReport} 
                     variant="outlined"
                     color="secondary"
+                    disabled={!has_complete_report}
                 >
                     <Label>Send to AVID</Label>
                 </Button>
+                {/key}
+
 
                 <div>
                     <span style="color: grey"><i>Last saved:

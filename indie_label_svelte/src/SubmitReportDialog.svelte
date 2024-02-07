@@ -2,7 +2,6 @@
     import Dialog, { Title, Content, Actions } from "@smui/dialog";
     import Button, { Label } from "@smui/button";
     import Textfield from "@smui/textfield";
-    import Select, { Option } from "@smui/select";
     import CircularProgress from '@smui/circular-progress';
 
     export let open;
@@ -10,13 +9,6 @@
     export let all_reports;
     let name = "";
     let email = "";
-    let all_sep_options = [
-        "Accuracy",
-        "Bias/Discrimination",
-        "Adversarial Example",
-        "Other",
-    ];
-    let sep_selection = "";
 
     let promise_submit = Promise.resolve(null);
     function handleSubmitReport() {
@@ -29,7 +21,6 @@
             reports: JSON.stringify(all_reports),
             name: name,
             email: email,
-            sep_selection: sep_selection,
         };
 
 		let params = new URLSearchParams(req_params).toString();
@@ -58,15 +49,16 @@
 
             <!-- Summary of complete reports -->
             <div>
-                <p><b>Summary of Reports to Send</b> (Reports that include evidence and are marked as complete)</p>
+                <p><b>Summary of Reports to Send</b> (Reports that include all fields and are marked as complete)</p>
                 <ul>
                     {#each all_reports as report}
-                        {#if report["complete_status"] && (report["evidence"].length > 0)}
+                        {#if report["complete_status"] && (report["evidence"].length > 0) && (report["text_entry"] != "") && (report["sep_selection"])}
                             <li>{report["title"]}</li>
                             <ul>
                                 <li>Error Type: {report["error_type"]}</li>
                                 <li>Evidence: Includes {report["evidence"].length} example{(report["evidence"].length > 1) ? 's' : ''}</li>
                                 <li>Summary/Suggestions: {report["text_entry"]}</li>
+                                <li>Audit Category: {report["sep_selection"] || ''}</li>
                             </ul>
                         {/if}
                     {/each}
@@ -74,13 +66,6 @@
             </div>
 
             <!-- Form fields -->
-            <div>
-                <Select bind:value={sep_selection} label="Audit category" style="width: 90%">
-                    {#each all_sep_options as opt}
-                        <Option value={opt}>{opt}</Option>
-                    {/each}
-                </Select>
-            </div>
             <div>
                 <Textfield bind:value={name} label="(Optional) Name" style="width: 90%" />
             </div>

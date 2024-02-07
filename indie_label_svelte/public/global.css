@@ -120,7 +120,7 @@ h6 {
 	font-weight: bold;
 	font-size: 16px;
 	margin-top: 25px;
-	margin-bottom: 25px;
+	margin-bottom: 15px;
 }
 
 .head_6_non_cap {
@@ -203,6 +203,11 @@ table {
 .spacing_vert_60 {
 	margin: 60px 0;
 }
+
+.spacing_vert_100_bottom {
+	margin: 0 0 100px 0;
+}
+
 
 .page_title {
 	font-size: 30px;
