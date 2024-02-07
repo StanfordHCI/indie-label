@@ -320,3 +320,14 @@ table {
 .mdc-drawer .mdc-deprecated-list-item {
 	height: 64px !important;
 }
+
+/* Material UI secondary button formatting */
+:root {
+	--mdc-theme-secondary: #676778;
+}
+.smui-button--color-secondary:not(:disabled) {
+    color: var(--mdc-theme-secondary) !important;
+}
+.smui-button--color-secondary.mdc-button--outlined:not(:disabled) {
+    border-color: var(--mdc-theme-secondary) !important;
+}
