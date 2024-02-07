@@ -483,7 +483,7 @@
                     variant="outlined"
                     color="secondary"
                 >
-                    <Label>Send Reports</Label>
+                    <Label>Send to AVID</Label>
                 </Button>
 
                 <div>

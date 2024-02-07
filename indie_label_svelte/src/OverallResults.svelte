@@ -7,9 +7,6 @@
     import Card, { Content } from '@smui/card';
 
     export let data;
-    export let clusters;
-    export let personalized_model;
-    export let cluster = "";
     
     let show_step1_info = false;
 
