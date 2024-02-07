@@ -8,6 +8,7 @@
     export let open;
     export let cur_user;
     export let all_reports;
+    let name = "";
     let email = "";
     let all_sep_options = [
         "Accuracy",
@@ -26,6 +27,7 @@
         let req_params = {
             cur_user: cur_user,
             reports: JSON.stringify(all_reports),
+            name: name,
             email: email,
             sep_selection: sep_selection,
         };
@@ -51,7 +53,7 @@
             <!-- Description -->
             <div>
                 <b>When you are ready to send all of your audit reports to the <a href="https://avidml.org/" target="_blank">AI Vulnerability Database</a> (AVID), please fill out the following information.</b>
-                Only your submitted reports will be stored in the database for further analysis. While you can submit reports anonymously, we encourage you to provide your email so that we can contact you if we have any questions.
+                Only your submitted reports will be stored in the database for further analysis. While you can submit reports anonymously, we encourage you to provide your name and/or email so that we can contact you if we have any questions.
             </div>
 
             <!-- Summary of complete reports -->
@@ -78,6 +80,9 @@
                         <Option value={opt}>{opt}</Option>
                     {/each}
                 </Select>
+            </div>
+            <div>
+                <Textfield bind:value={name} label="(Optional) Name" style="width: 90%" />
             </div>
             <div>
                 <Textfield bind:value={email} label="(Optional) Contact email" style="width: 90%" />

@@ -336,6 +336,10 @@ def format_description(indie_label_json):
     text_entry = indie_label_json["text_entry"]
     return f"Title: {title}\nError Type: {error_type}\nSummary/Suggestions: {text_entry}"
 
+# Format the credit field for the report with the current user's username, optional name, and optional email address
+def format_credit(cur_user, name, email):
+    return f"Username: {cur_user}, Name: {name}, Email: {email}"
+
 # Convert indielabel json to AVID json format.
 # See the AVID format in https://avidml.org/avidtools/reference/report
 #
@@ -349,7 +353,7 @@ def format_description(indie_label_json):
 #   user_rating                 personal_model_score    0.92
 #   user_decision               user_decision           "Non-toxic"
 # Note that this is at the individual report level.
-def convert_indie_label_json_to_avid_json(indie_label_json, cur_user, email, sep_selection):
+def convert_indie_label_json_to_avid_json(indie_label_json, cur_user, name, email, sep_selection):
 
     # Setting up the structure with a dict to enable programmatic additions
     avid_json_dict = { 
@@ -398,17 +402,16 @@ def convert_indie_label_json_to_avid_json(indie_label_json, cur_user, email, sep
               "taxonomy_version": "0.2"
             }
           },
-          "credit": "", # Leaving empty so that credit can be assigned
+          "credit": {
+            "lang": "eng", # TODO: Make language selectable
+            "value": "" # Leaving empty so that credit can be assigned
+          },
           "reported_date": "" # Leaving empty so that it can be dynamically filled in
     }
 
-    avid_json_dict["description"] = format_description(indie_label_json)
-    avid_json_dict["reported_date"] = str(date.today())
-    # Assign credit to email if provided, otherwise default to randomly assigned username
-    if email != "":
-        avid_json_dict["credit"] = email
-    else:
-        avid_json_dict["credit"] = cur_user
+    avid_json_dict["description"]["value"] = format_description(indie_label_json)
+    avid_json_dict["reported_date"] = str(date.today())    
+    avid_json_dict["credit"]["value"] = format_credit(cur_user, name, email)
 
     sep_enum = get_sep_enum(sep_selection)
     avid_json_dict["impact"]["avid"]["sep_view"] = [sep_enum]

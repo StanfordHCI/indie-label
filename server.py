@@ -648,7 +648,7 @@ def get_eligible_reports(reports):
 
 # Submit all reports to AVID
 # Logs the responses
-def submit_reports_to_AVID(reports, cur_user, email, sep_selection, debug=DEBUG):
+def submit_reports_to_AVID(reports, cur_user, name, email, sep_selection, debug=DEBUG):
     # Set up the connection to AVID
     root = os.environ.get('AVID_API_URL')
     api_key = os.environ.get('AVID_API_KEY')
@@ -659,7 +659,7 @@ def submit_reports_to_AVID(reports, cur_user, email, sep_selection, debug=DEBUG)
         print("Num eligible reports:", len(reports))
     
     for r in reports:
-        new_report = utils.convert_indie_label_json_to_avid_json(r, cur_user, email, sep_selection)
+        new_report = utils.convert_indie_label_json_to_avid_json(r, cur_user, name, email, sep_selection)
         url = root + "submit"
         response = requests.post(url, json=json.loads(new_report), headers=key) # The loads ensures type compliance
         uuid = response.json()
@@ -693,6 +693,7 @@ def save_reports(debug=DEBUG):
 @app.route("/submit_avid_report")
 def submit_avid_report():
     cur_user = request.args.get("cur_user")
+    name = request.args.get("name")
     email = request.args.get("email")
     sep_selection = request.args.get("sep_selection")
     reports_json = request.args.get("reports")
@@ -700,7 +701,7 @@ def submit_avid_report():
     reports = json.loads(reports_json)
 
     # Submit reports to AVID
-    submit_reports_to_AVID(reports, cur_user, email, sep_selection)
+    submit_reports_to_AVID(reports, cur_user, name, email, sep_selection)
 
     results = {
         "status": "success",
