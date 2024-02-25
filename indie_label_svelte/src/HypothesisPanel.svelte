@@ -440,7 +440,7 @@
                                     
                                 </div>
 
-                                <div class="spacing_vert_40">
+                                <div class="spacing_vert_40 spacing_vert_100_bottom">
                                     <div class="head_6">
                                         <b>Audit Category</b>
                                     </div>

@@ -10,6 +10,8 @@
     export let all_reports;
     let name = "";
     let email = "";
+    // which_reports_to_submit is an array of booleans that tracks whether the report
+    // in the corresponding index of all_reports should be submitted to AVID.
     let which_reports_to_submit = [];
     for (let i = 0; i < all_reports.length; i++) {
         which_reports_to_submit.push(false);
