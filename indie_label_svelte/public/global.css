@@ -54,6 +54,12 @@ input, button, select, textarea {
 	border-radius: 2px;
 }
 
+a {
+	-webkit-padding: 0.4em 0;
+	padding: 0.4em;
+	margin: 0 0 0.5em 0;
+}
+
 input:disabled {
 	color: #ccc;
 }

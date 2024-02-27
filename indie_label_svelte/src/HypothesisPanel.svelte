@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { fade } from 'svelte/transition';
     import ClusterResults from "./ClusterResults.svelte";
     import SubmitReportDialog from "./SubmitReportDialog.svelte";
 
@@ -23,6 +24,7 @@
     import Checkbox from '@smui/checkbox';
     import FormField from '@smui/form-field';
     import IconButton from "@smui/icon-button";
+    import { Icon } from "@smui/common";
     import Radio from '@smui/radio';
 
     export let model;
@@ -52,6 +54,7 @@
     let editErrorType = false;
     let unfinished_count = 0;
     let has_complete_report = false;
+    let save_check_visible = false;  // Whether the save checkmark is visible
     
     function setActive(value: string) {
         selected = value;
@@ -132,7 +135,11 @@
 
     let promise_save = Promise.resolve(null);
     function handleSaveReport() {
+        // Briefly display checkmark
         promise_save = saveReport();
+        save_check_visible = true;
+        // Hide save checkmark after 1 second
+        setTimeout(() => save_check_visible = false, 1000);
     }
 
     async function saveReport() {
@@ -485,6 +492,7 @@
 
         <div class="panel_footer">
             <div class="panel_footer_contents">
+                <!-- New button -->
                 <Button 
                     on:click={handleNewReport} 
                     variant="outlined" 
@@ -494,6 +502,7 @@
                     <Label>New</Label>
                 </Button>
 
+                <!-- Delete button -->
                 <!-- <Button 
                     on:click={handleDeleteReport} 
                     variant="outlined" 
@@ -503,14 +512,29 @@
                     <Label>Delete</Label>
                 </Button> -->
 
+                <!-- Save button -->
                 <Button 
                     on:click={handleSaveReport} 
                     variant="outlined" 
                     color="secondary"
                 >
-                    <Label>Save</Label>
+                    <Label>
+                        {#await promise_save}
+                            <CircularProgress style="height: 13.5px; width: 13.5px;" indeterminate />
+                        {:then result}
+                            {#if result && save_check_visible}
+                            <span transition:fade>
+                                <Icon class="material-icons">check</Icon>
+                            </span>
+                            {/if}
+                        {:catch error}
+                            <span style="color: red">{error.message}</span>
+                        {/await}
+                        Save
+                    </Label>
                 </Button>
 
+                <!-- Send to Avid button -->
                 {#key has_complete_report}
                 <Button 
                     on:click={handleSubmitReport} 
@@ -522,22 +546,19 @@
                 </Button>
                 {/key}
 
+                <!-- Feedback button -->
+                <Button 
+                    href="https://forms.gle/vDXchpbBFjDeKjJA6" 
+                    target="_blank"
+                    variant="outlined" 
+                    color="secondary"
+                >
+                    <Label>
+                        <Icon class="material-icons">feedback_outline</Icon>
+                        Feedback
+                    </Label>
+                </Button>
 
-                <div>
-                    <span style="color: grey"><i>Last saved:
-                    {#await promise_save}
-                        <CircularProgress style="height: 32px; width: 32px;" indeterminate />
-                    {:then result}
-                        {#if result}
-                        {new Date().toLocaleTimeString()}
-                        {:else}
-                        —
-                        {/if}
-                    {:catch error}
-                        <p style="color: red">{error.message}</p>
-                    {/await}
-                    </i></span>
-                </div>
             </div>
         </div>
         {/if}
