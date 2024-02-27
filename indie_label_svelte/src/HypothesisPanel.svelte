@@ -533,7 +533,6 @@
                     color="secondary"
                 >
                     <Label>
-                        <Icon class="material-icons">feedback_outline</Icon>
                         Feedback
                     </Label>
                 </Button>
