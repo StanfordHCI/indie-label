@@ -476,8 +476,6 @@
                 <Button 
                     on:click={handleNewReport} 
                     variant="outlined" 
-                    color="secondary"
-                    style=""
                 >
                     <Label>New</Label>
                 </Button>
@@ -486,8 +484,6 @@
                 <!-- <Button 
                     on:click={handleDeleteReport} 
                     variant="outlined" 
-                    color="secondary"
-                    style=""
                 >
                     <Label>Delete</Label>
                 </Button> -->
@@ -496,7 +492,6 @@
                 <Button 
                     on:click={handleSaveReport} 
                     variant="outlined" 
-                    color="secondary"
                 >
                     <Label>
                         {#await promise_save}
@@ -519,24 +514,16 @@
                 <Button 
                     on:click={handleSubmitReport} 
                     variant="outlined"
-                    color="secondary"
                 >
                     <Label>Send Reports to AVID</Label>
                 </Button>
                 {/key}
+            </div>
 
-                <!-- Feedback button -->
-                <Button 
-                    href="https://forms.gle/vDXchpbBFjDeKjJA6" 
-                    target="_blank"
-                    variant="outlined" 
-                    color="secondary"
-                >
-                    <Label>
-                        Feedback
-                    </Label>
-                </Button>
-
+            <div class="feedback_section">
+                <a href="https://forms.gle/vDXchpbBFjDeKjJA6" target="_blank" class="feedback_link">
+                    Share feedback
+                </a>
             </div>
         </div>
         {/if}
@@ -570,13 +557,23 @@
         background: #f3f3f3;
         z-index: 11;
         bottom: 0;
-        padding: 15px 0px;
+        padding: 5px 0px;
     }
     .panel_footer_contents {
-        /* padding: 0px 20px; */
         display: flex;
         justify-content: space-around;
         align-items: center;
+        padding: 5px 0px 10px 0px;
+    }
+    .feedback_section {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+    .feedback_link {
+        color: var(--mdc-theme-secondary);
+        font-size: 10px;
+        text-decoration: underline;
     }
 
     :global(.mdc-button.user_button) {
