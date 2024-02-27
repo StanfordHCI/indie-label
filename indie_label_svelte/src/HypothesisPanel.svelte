@@ -95,7 +95,7 @@
         selected = all_reports[0];
         setActive(selected);
         cur_open_evidence = selected["evidence"];
-        unfinished_count = all_reports.filter(item => !item.complete_status).length
+        unfinished_count = all_reports.filter(item => (item.evidence.length == 0) || (item.text_entry == "") || !(item.sep_selection)).length
         has_complete_report = hasCompleteReport();
         return all_reports;
     }
@@ -165,15 +165,13 @@
             evidence: [],
             text_entry: "",
             sep_selection: "",
-            complete_status: false,
         };
         all_reports = all_reports.concat(new_report);
         promise = Promise.resolve(all_reports);
         // Open this new report
         selected = all_reports[all_reports.length - 1];
         cur_open_evidence = selected["evidence"];
-        selected["complete_status"] = false;
-        unfinished_count = all_reports.filter(item => !item.complete_status).length
+        unfinished_count = all_reports.filter(item => (item.evidence.length == 0) || (item.text_entry == "") || !(item.sep_selection)).length
     }
 
     function handleDeleteReport() {
@@ -182,17 +180,11 @@
         promise = Promise.resolve(all_reports);
         selected  = all_reports[0];
         cur_open_evidence = selected["evidence"];
-        unfinished_count = all_reports.filter(item => !item.complete_status).length
-    }
-
-    function handleMarkComplete() {
-        selected["complete_status"] = !selected["complete_status"];
-        unfinished_count = all_reports.filter(item => !item.complete_status).length
-        handleSaveReport(); // Auto-save report
+        unfinished_count = all_reports.filter(item => (item.evidence.length == 0) || (item.text_entry == "") || !(item.sep_selection)).length
     }
 
     function hasCompleteReport() {
-        return all_reports.some(item => item.complete_status && (item.evidence.length > 0) && (item.text_entry != "") && (item.sep_selection));
+        return all_reports.some(item => (item.evidence.length > 0) && (item.text_entry != "") && (item.sep_selection));
     }
 
     // Error type
@@ -309,7 +301,7 @@
                                         on:click={() => setActive(report)}
                                         activated={selected === report}
                                     >   
-                                        {#if report["complete_status"]}
+                                        {#if (report["evidence"].length > 0) && (report["text_entry"] != "") && (report["sep_selection"])}
                                         <Graphic class="material-icons" aria-hidden="true">task_alt</Graphic>
                                         {:else}
                                         <Graphic class="material-icons" aria-hidden="true">radio_button_unchecked</Graphic>
@@ -455,7 +447,7 @@
                                     
                                 </div>
 
-                                <div class="spacing_vert_40">
+                                <div class="spacing_vert_40 spacing_vert_100_bottom">
                                     <div class="head_6">
                                         <b>Audit Category</b>
                                     </div>
@@ -466,18 +458,6 @@
                                             {/each}
                                         </Select>
                                     </div>
-                                </div>
-
-                                <div class="spacing_vert_100_bottom">
-                                    <div>
-                                        <span class="head_6"><b>Mark report as complete?</b></span>
-                                        <FormField>
-                                            <Checkbox checked={selected["complete_status"]} on:change={handleMarkComplete} />
-                                        </FormField>
-                                        <br>
-                                        <p>Reports must be marked as complete and include all fields before they can be sent to AVID below.</p>
-                                    </div>
-                                    
                                 </div>
                             </div>
                             {/if}
@@ -540,9 +520,8 @@
                     on:click={handleSubmitReport} 
                     variant="outlined"
                     color="secondary"
-                    disabled={!has_complete_report}
                 >
-                    <Label>Send to AVID</Label>
+                    <Label>Send Reports to AVID</Label>
                 </Button>
                 {/key}
 
