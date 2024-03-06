@@ -522,7 +522,7 @@
 
             <div class="feedback_section">
                 <a href="https://forms.gle/vDXchpbBFjDeKjJA6" target="_blank" class="feedback_link">
-                    Share feedback
+                    Share feedback about the tool
                 </a>
             </div>
         </div>
