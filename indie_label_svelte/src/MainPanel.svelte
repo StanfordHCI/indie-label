@@ -12,13 +12,15 @@
 	export let cur_user;
 
 	// Handle routing
-	let active = "labeling";
+	let active = "about";  // default tab on load
     let searchParams = new URLSearchParams(window.location.search);
     let tab = searchParams.get("tab");
 	if (tab == "auditing") {
 		active = "auditing";
 	} else if (tab == "about") {
 		active = "about";
+	} else if (tab == "labeling") {
+		active = "labeling";
 	}
 	
 </script>
