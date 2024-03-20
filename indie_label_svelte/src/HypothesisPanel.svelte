@@ -248,8 +248,8 @@
         <div class="panel_header">
             <div class="panel_header_content">
                 <div class="page_header">
-                    <img src="/logo.png" style="height: 50px; padding: 0px 20px;" alt="IndieLabel" />
-                    <Button class="user_button" color="secondary" style="margin: 12px 10px;" >
+                    <img src="/logo.png" style="height: 50px;" alt="IndieLabel" />
+                    <Button class="user_button" color="secondary" style="margin: 0 5px; padding: 0 5px;" >
                         <Label>User: {cur_user}</Label>
                     </Button>
                 </div>
@@ -259,7 +259,7 @@
                         on:click={() => (open = !open)}
                         color="primary"
                         disabled={model == null}
-                        style="float: right; padding: 10px; margin-right: 10px;"
+                        style="float: right; padding: 0 5px; margin: 0 5px; max-width: 200px;"
                     >
                         {#if open}
                         <Label>Close</Label>
@@ -584,18 +584,17 @@
 
     :global(.mdc-button.user_button span) {
         text-overflow: ellipsis;
-        white-space: nowrap;
         overflow: hidden;
     }
 
     .page_header {
         width: 100%;
         background: #e3d6fd;
-        /* padding: 21px 0; */
-        /* border-bottom: 1px solid #e3d6fd; */
         padding: 10.5px 0;
         position: relative;
-        display: inline-block;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
     }
 
     .page_header:before {
@@ -608,9 +607,11 @@
     }
 
     .hypotheses_header {
-        display: inline-block;
         width: 100%;
         padding: 10px 0;
         vertical-align: middle;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
     }
 </style>

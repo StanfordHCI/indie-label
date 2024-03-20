@@ -32,7 +32,7 @@
     <div>
         <!-- Performance visualization -->
         <div>
-            <VegaLite {perf_plot_data} spec={perf_plot_spec} bind:view={perf_plot_view}/>
+            <VegaLite data={perf_plot_data} spec={perf_plot_spec} bind:view={perf_plot_view}/>
         </div>
     </div>
 </div>

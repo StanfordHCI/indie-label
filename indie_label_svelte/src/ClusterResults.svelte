@@ -32,7 +32,7 @@
     export let show_checkboxes = true;
     export let table_width_pct = 80;
     export let rowsPerPage = 10;
-    export let evidence;
+    export let evidence = null;
     export let table_id;
     export let use_model = true;
     export let show_agree_disagree = false;
@@ -232,7 +232,7 @@
         <div class="row">
             <div class="col s8">
                 <VegaLite
-                    {cluster_overview_data}
+                    data={cluster_overview_data}
                     spec={cluster_overview_spec}
                     bind:view={cluster_overview_view}
                 />
@@ -302,7 +302,7 @@
                     <Cell>
                         System<br>decision<br>
                         {#if show_checkboxes}
-                        <span style="font-size:12px; max-width:125px">White = Non-toxic, <br>Grey = Toxic</span>
+                        <span style="font-size:9px; max-width:125px">White = Non-toxic, <br>Grey = Toxic</span>
                         {/if}
                     </Cell>
                     {#if show_num_ratings}
@@ -314,7 +314,7 @@
                     <Cell>
                         Potential error<br>type<br>
                         {#if show_checkboxes}
-                        <span style="font-size:12px; max-width:125px">Darker red = Greater <br>potential system error</span>
+                        <span style="font-size:9px; max-width:125px">Darker red = Greater <br>potential system error</span>
                         {/if}
                     </Cell>
 

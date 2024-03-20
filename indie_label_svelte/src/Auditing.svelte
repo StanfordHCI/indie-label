@@ -293,9 +293,6 @@
                 {#if audit_results}
                     <OverallResults
                         data={audit_results}
-                        clusters={clusters}
-                        personalized_model={personalized_model}
-                        cluster={topic}
                     />
                 {/if}
             {:catch error}

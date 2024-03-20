@@ -65,7 +65,7 @@
         {/if}
     <div class="row">
         <div class="col s8">
-            <VegaLite {topic_overview_data} spec={topic_overview_spec} bind:view={topic_overview_view}/>
+            <VegaLite data={topic_overview_data} spec={topic_overview_spec} bind:view={topic_overview_view}/>
         </div>
     </div>
 

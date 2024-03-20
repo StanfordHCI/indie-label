@@ -7,7 +7,7 @@
 	import TabBar from "@smui/tab-bar";
 	import { Icon } from "@smui/common";
 
-	export let model;
+	export let model = null;
 	export let error_type;
 	export let cur_user;
 
