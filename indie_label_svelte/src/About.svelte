@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Card, { Content } from '@smui/card';
 </script>
 
 <svelte:head>
@@ -14,6 +15,11 @@
             </p>
             <div class="video-container">
                 <iframe src="https://www.youtube.com/embed/Je0DCDnJ6KQ?si=H1dVy-oe6PSP0QYM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+            <div class="info-card">
+                <Card variant="outlined" style="background-color: rgb(242 236 255); padding: 10px 20px;">
+                    <p><b>Note</b>: IndieLabel is a research prototype. It is primarily designed for educational purposes to demonstrate our end-user auditing method applied towards a real-world system.</p>
+                </Card>
             </div>
         </div>
         <div>
@@ -44,7 +50,7 @@
                         <img src="./img/lam.jpg" alt="Michelle Lam">
                         <p>
                             <a href="http://michelle123lam.github.io" target="_blank"><b>Michelle Lam</b></a><br>
-                            PhD Student, Stanford CS
+                            PhD Candidate, Stanford CS
                         </p>
                     </div>
                     <div>
@@ -114,10 +120,10 @@
                             </p>
                         </div>
                         <div class="image-wide">
-                            <img src="./img/pan.jpg" alt="Christina Pan">
+                            <img src="./img/pan.jpg" alt="Christina A. Pan">
                             <p>
-                                <a href="https://www.christinaapan.com/" target="_blank"><b>Christina Pan</b></a><br>
-                                Christina Pan started her career building machine learning (ML) models at Google, which inspired her passion for design thinking and AI ethics.
+                                <a href="https://www.christinaapan.com/" target="_blank"><b>Christina A. Pan</b></a><br>
+                                Christina A. Pan started her career building machine learning (ML) models at Google, which inspired her passion for design thinking and AI ethics.
                             </p>
                         </div>
                         <div class="image-wide">
@@ -161,6 +167,14 @@
 
     .card-container {
         margin: 40px 0;
+    }
+
+    .info-card {
+        margin: 10px 0;
+    }
+
+    .info-card p {
+        line-height: normal;
     }
 
     .image-container {
