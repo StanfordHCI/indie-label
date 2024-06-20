@@ -24,9 +24,26 @@ This repo shares our implementation of **IndieLabel**—an interactive web appli
     ```
 
 - Concurrently build and run the Svelte app in another terminal session:
+    First, navigate to the Svelte application directory and install dependencies:
     ```
     $ cd indie_label_svelte/
+    $ npm install
+    ```
+    Then, start the development server. Depending on your operating system, use the appropriate command to set environment variables and run the server:
+
+    **For Unix-like systems (Linux, macOS):**
+    ```
     $ HOST=0.0.0.0 PORT=5000 npm run dev autobuild
+    ```
+    
+    **For Windows Command Prompt:**
+    ```
+    set HOST=0.0.0.0 && set PORT=5000 && npm run dev autobuild
+    ```
+    
+    **For Windows PowerShell:**
+    ```powershell
+    $env:HOST="0.0.0.0"; $env:PORT="5000"; npm run dev autobuild
     ```
 
 - You can now visit `localhost:5001` to view the IndieLabel app!
